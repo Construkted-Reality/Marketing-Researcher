@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {
+        "DEFAULT_MINIMUM_TOKENS": ""
+      },
+      "alwaysAllow": [
+        "get-library-docs",
+        "resolve-library-id"
+      ]
+    },
+    "tavily": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tavily-mcp@0.2.3"
+      ],
+      "env": {
+        "TAVILY_API_KEY": "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"
+      }
+    }
+  }
+}
