@@ -232,45 +232,63 @@
 - Professional report formatting
 - No degradation in research depth
 
-## Task: Enhance SPT Researcher with File Output
+## Task: Implement SPT Researcher JSON-First Architecture
 **Last performed:** September 8, 2025
 **Files modified:**
-- `spt_researcher.py` - Enhanced with pain-point file output and individual blog post files
-- `Pipfile` - Added pytest as dev dependency
-- `test_spt_researcher.py` - Updated to handle new functionality
+- `spt_researcher.py` - Complete rewrite with JSON-first schema and canonical dumps
+- `test_spt_researcher.py` - Comprehensive test suite with 5 new test functions
+- `SPT_RESEARCHER_GUIDE.md` - Complete documentation rewrite with troubleshooting workflows
 
-**Steps:**
-1. Add new CLI argument `--pain-points-output` for specifying pain-point output file
-2. Create `slugify(text: str) -> str` helper for safe filename generation
-3. Write pain-point list to separate markdown file after generation
-4. Extract article titles from generated blog posts (first `#` or `##` heading)
-5. Save each blog post as individual markdown file in `posts/` directory
-6. Use slugified title as filename for each blog post
-7. Add verbose logging for all file operations
-8. Preserve original combined output behavior for backward compatibility
-9. Add pytest test optimization with dummy data when `PYTEST_CURRENT_TEST` is set
-10. Update memory bank to reflect changes
+**Problem solved:**
+- Original step-1 output contained web scraping noise: "Source:", "Try again", "Please enable Javascript"
+- No canonical way to inspect exact payload fed to step-2
+- Difficult to troubleshoot and iterate on step-2 without re-running step-1
 
-**New functionality:**
-- Pain points saved to `pain_points.md` (or custom filename via `--pain-points-output`)
-- Individual blog posts saved to `posts/<slugified-title>.md`
-- Maintains original combined output in addition to new separate files
-- Test suite optimized for fast execution during development
+**Implementation:**
+1. **JSON-First Parser**: Added `parse_pain_points()` helper with JSON-first parsing and noise-filtered fallback
+2. **Strict JSON Schema**: Updated step-1 prompt to enforce exact JSON structure with validation rules
+3. **Canonical Dumps**: Changed `--pain-points-output` default from `.md` to `.json` with exact step-2 payload
+4. **Input Override**: Added `--pain-points-input` flag to load existing JSON and skip step-1 generation
+5. **Human-Readable Option**: Added `--pain-points-markdown` for optional review files (clearly non-canonical)
+6. **Enhanced Testing**: 5 comprehensive test functions covering JSON parsing, input override, and dummy modes
+7. **Noise Filtering**: Robust regex patterns to eliminate 8+ common web scraping artifacts
+8. **Verbose Logging**: Enhanced progress tracking with parser types and file paths
 
-**Usage examples:**
+**New CLI flags:**
+- `--pain-points-output <path>` - Canonical JSON dump (default: pain_points.json)
+- `--pain-points-input <path>` - Load existing JSON and skip step-1
+- `--pain-points-markdown <path>` - Optional human-readable list (non-canonical)
+
+**Workflow patterns:**
 ```bash
-# Basic usage with new file outputs
-python spt_researcher.py --topic "remote work" --verbose
+# Generate and troubleshoot
+python spt_researcher.py --topic "photogrammetry" --verbose
+cat pain_points.json | jq .
 
-# Custom pain-points filename
-python spt_researcher.py --topic "remote work" --pain-points-output "my_painpoints.md"
+# Iterate on step-2 only
+python spt_researcher.py --pain-points-input pain_points.json --topic "ignored"
 
-# Run tests quickly
-PYTEST_CURRENT_TEST=1 pipenv run pytest -q test_spt_researcher.py
+# Generate with review file
+python spt_researcher.py --topic "AI tools" --pain-points-markdown review.md
 ```
 
+**Testing coverage:**
+- `test_json_dump_creation()` - Validates canonical JSON structure and content
+- `test_pain_points_input_override()` - Tests input flag skips step-1 correctly
+- `test_human_readable_markdown()` - Validates optional markdown output
+- `test_json_parsing_functions()` - Unit tests for parser with different input formats
+- Enhanced existing tests for backward compatibility
+
+**Quality improvements:**
+- JSON parser extracts clean `pain_points[].idea` fields
+- Fallback parser filters noise with regex patterns for Source:, Title:, Try again, etc.
+- Deduplication and max-points enforcement
+- Parser type logging (json/fallback/dummy) for debugging
+- Reproducible workflows with exact step-2 input preservation
+
 **Important notes:**
-- Individual blog post files use article title as filename when available
-- Falls back to pain-point text if no title found in markdown
-- All directory creation is automatic (`posts/` directory created as needed)
-- Test mode uses dummy data to avoid long LLM calls during testing
+- Maintains full backward compatibility with existing workflows
+- Default output changed from pain_points.md to pain_points.json
+- Human-readable markdown is optional and clearly marked as non-canonical
+- Test mode uses dummy data to avoid LLM calls during development
+- Complete documentation rewrite with troubleshooting patterns

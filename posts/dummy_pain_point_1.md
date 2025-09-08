@@ -1,1 +1,0 @@
-# Dummy pain point 1\n\nDummy content for testing.

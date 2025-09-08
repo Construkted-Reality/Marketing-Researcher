@@ -14,11 +14,16 @@
 - ✅ Validated end-to-end SearXNG research workflow with professional report output
 
 ## Current Work Focus
-**SearXNG Integration Complete**: Successfully integrated self-hosted SearXNG instance (https://search.roci.me/) with easy switching between privacy-first and commercial search options.
+**SPT Researcher JSON-First Architecture Complete**: Successfully implemented JSON-only schema approach for `spt_researcher.py` to solve step-1 output parsing issues.
 
-**New Feature Added**: Implemented `spt_researcher.py` – a CLI utility that generates user pain‑points and automated blog‑post drafts using GPT‑Researcher.
+**Major Enhancement**: Transformed SPT researcher from noisy markdown output to canonical JSON dump workflow:
+- **JSON-First Schema**: Step-1 now uses strict JSON-only prompts with noise filtering
+- **Canonical Dumps**: Exact step-2 input payload written to `pain_points.json` for troubleshooting
+- **Reproducible Workflows**: `--pain-points-input` flag allows step-2 iteration without re-generation
+- **Enhanced Testing**: 5 comprehensive test functions covering all new functionality
+- **Complete Documentation**: Updated SPT_RESEARCHER_GUIDE.md with usage patterns and troubleshooting
 
-The script now also writes the initial pain‑point list to a separate markdown file (default `pain_points.md`) and saves each generated blog post as an individual markdown file under a `posts/` directory. Filenames are derived from the article titles (slugified), enabling easy review of each draft.
+The script eliminates web scraping artifacts like "Source:", "Try again", "Please enable Javascript" through robust parsing and produces clean, structured pain points for reliable step-2 processing.
 
 ## Active Configuration
 - **vLLM Server**: 192.168.8.90:42069 (gpt-oss-120b model)
@@ -33,12 +38,13 @@ The script now also writes the initial pain‑point list to a separate markdown 
 3. Explore additional privacy-first research tools and integrations
 4. Document maintenance procedures for SearXNG instance management
 
-## Key Files Modified Today (SearXNG Integration)
-- Enhanced `.env` configuration with SearXNG URL and search engine switching options
-- Created `switch_search.py` utility for easy search engine configuration changes
-- Added `test_searxng_direct.py` for SearXNG connectivity validation
-- Generated `SEARCH_ENGINE_SWITCHING_GUIDE.md` comprehensive documentation
-- Validated end-to-end research workflow with SearXNG producing professional reports
+## Key Files Modified Today (SPT Researcher JSON-First Architecture)
+- **`spt_researcher.py`**: Complete rewrite with JSON-first architecture, canonical dumps, and enhanced CLI
+- **`test_spt_researcher.py`**: Comprehensive test suite with 5 test functions covering all scenarios
+- **`SPT_RESEARCHER_GUIDE.md`**: Complete documentation rewrite with troubleshooting workflows
+- Added `parse_pain_points()` helper with JSON-first parsing and noise-filtered fallback
+- Implemented `--pain-points-input`, `--pain-points-output`, `--pain-points-markdown` CLI flags
+- Enhanced verbose logging and error handling throughout
 
 ## Performance Metrics
 - Research report generation: ~2 minutes end-to-end (both SearXNG and Tavily)
