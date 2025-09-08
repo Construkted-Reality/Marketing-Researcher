@@ -28,7 +28,7 @@
 ### Core Files
 - **`test.py`**: Main research script with async wrapper for GPT Researcher
 - **`test_researcher.py`**: Alternative research script with different query
-- **`spt_researcher.py`** – Script for generating user pain‑points and automated blog‑post drafts
+- **`spt_researcher.py`** – Script for generating user pain‑points and automated blog‑post drafts with individual file output
 - **`.env`**: Configuration file containing all server endpoints and API keys
 
 ### Testing Suite

@@ -9,10 +9,9 @@ gpt-researcher = "*"
 python-dotenv = "*"
 openai = "*"
 tavily-python = "*"
-sentence-transformers = "*"
-langchain-huggingface = "*"
 
 [dev-packages]
+pytest = "*"
 
 [requires]
 python_version = "3.12"

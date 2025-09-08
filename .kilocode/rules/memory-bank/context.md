@@ -18,6 +18,8 @@
 
 **New Feature Added**: Implemented `spt_researcher.py` – a CLI utility that generates user pain‑points and automated blog‑post drafts using GPT‑Researcher.
 
+The script now also writes the initial pain‑point list to a separate markdown file (default `pain_points.md`) and saves each generated blog post as an individual markdown file under a `posts/` directory. Filenames are derived from the article titles (slugified), enabling easy review of each draft.
+
 ## Active Configuration
 - **vLLM Server**: 192.168.8.90:42069 (gpt-oss-120b model)
 - **Ollama Server**: 192.168.8.90:11434 (mxbai-embed-large model)

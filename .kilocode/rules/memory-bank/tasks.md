@@ -231,3 +231,46 @@
 - Real-time web data integration
 - Professional report formatting
 - No degradation in research depth
+
+## Task: Enhance SPT Researcher with File Output
+**Last performed:** September 8, 2025
+**Files modified:**
+- `spt_researcher.py` - Enhanced with pain-point file output and individual blog post files
+- `Pipfile` - Added pytest as dev dependency
+- `test_spt_researcher.py` - Updated to handle new functionality
+
+**Steps:**
+1. Add new CLI argument `--pain-points-output` for specifying pain-point output file
+2. Create `slugify(text: str) -> str` helper for safe filename generation
+3. Write pain-point list to separate markdown file after generation
+4. Extract article titles from generated blog posts (first `#` or `##` heading)
+5. Save each blog post as individual markdown file in `posts/` directory
+6. Use slugified title as filename for each blog post
+7. Add verbose logging for all file operations
+8. Preserve original combined output behavior for backward compatibility
+9. Add pytest test optimization with dummy data when `PYTEST_CURRENT_TEST` is set
+10. Update memory bank to reflect changes
+
+**New functionality:**
+- Pain points saved to `pain_points.md` (or custom filename via `--pain-points-output`)
+- Individual blog posts saved to `posts/<slugified-title>.md`
+- Maintains original combined output in addition to new separate files
+- Test suite optimized for fast execution during development
+
+**Usage examples:**
+```bash
+# Basic usage with new file outputs
+python spt_researcher.py --topic "remote work" --verbose
+
+# Custom pain-points filename
+python spt_researcher.py --topic "remote work" --pain-points-output "my_painpoints.md"
+
+# Run tests quickly
+PYTEST_CURRENT_TEST=1 pipenv run pytest -q test_spt_researcher.py
+```
+
+**Important notes:**
+- Individual blog post files use article title as filename when available
+- Falls back to pain-point text if no title found in markdown
+- All directory creation is automatic (`posts/` directory created as needed)
+- Test mode uses dummy data to avoid long LLM calls during testing

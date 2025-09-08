@@ -82,6 +82,9 @@ openai = "*"                      # Unified LLM client library
 tavily-python = "*"               # Web search integration
 sentence-transformers = "*"       # Local embedding models
 langchain-huggingface = "*"       # HuggingFace model integration
+
+[dev-packages]
+pytest = "*"                      # Testing framework for development
 ```
 
 ### System Dependencies
