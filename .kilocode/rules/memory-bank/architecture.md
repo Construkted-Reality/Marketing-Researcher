@@ -28,7 +28,7 @@
 ### Core Files
 - **`test.py`**: Main research script with async wrapper for GPT Researcher
 - **`test_researcher.py`**: Alternative research script with different query
-- **`spt_researcher.py`** – Script for generating user pain‑points and automated blog‑post drafts with individual file output
+- **`spt_researcher.py`** – JSON-first pain-point & blog-post generator with canonical dumps and reproducible workflows
 - **`.env`**: Configuration file containing all server endpoints and API keys
 
 ### Testing Suite
@@ -37,12 +37,14 @@
 - **`test_embedding_server.py`**: Generic embedding server testing (OpenAI-compatible)
 - **`test_tavily_direct.py`**: Tavily API key validation
 - **`test_searxng_direct.py`**: SearXNG connectivity and search API testing
+- **`test_spt_researcher.py`**: SPT researcher JSON parsing, input override, and workflow testing
 
 ### Configuration Management
 - **`switch_embedding.py`**: Automated utility for switching between embedding configurations
 - **`switch_search.py`**: Automated utility for switching between search engines
 - **`EMBEDDING_SWITCHING_GUIDE.md`**: User documentation for embedding options
 - **`SEARCH_ENGINE_SWITCHING_GUIDE.md`**: User documentation for search engine options
+- **`SPT_RESEARCHER_GUIDE.md`**: Complete documentation for JSON-first pain-point generation
 - **`Pipfile`**: Python dependency management
 
 ## Key Technical Decisions
@@ -71,6 +73,11 @@
 - **Decision**: Integrate self-hosted SearXNG alongside commercial Tavily API
 - **Rationale**: Complete privacy for sensitive research, no external search API dependencies
 - **Implementation**: GPT Researcher built-in SearX/SearXNG retriever with easy switching
+
+### 6. JSON-First SPT Architecture
+- **Decision**: Transform SPT researcher to use strict JSON schema with canonical dumps
+- **Rationale**: Eliminate parsing noise, enable reproducible workflows, support troubleshooting
+- **Implementation**: JSON-only prompts, noise-filtered fallback, step-1/step-2 decoupling
 
 ## Design Patterns
 
@@ -147,7 +154,18 @@ test_*.py scripts →
 ├─ test_ollama_embedding.py → Ollama embedding
 ├─ test_tavily_direct.py → Tavily API
 ├─ test_searxng_direct.py → SearXNG connectivity
+├─ test_spt_researcher.py → SPT JSON parsing & workflows
 └─ comprehensive system validation
+```
+
+### SPT Researcher Workflow Path
+```
+spt_researcher.py → load_dotenv() →
+├─ Step-1: get_pain_points() → JSON-first parsing → pain_points.json
+├─ Step-2: generate_blog_post() for each pain point
+├─ Optional: --pain-points-input → skip step-1, load existing JSON
+├─ Optional: --pain-points-markdown → human-readable review file
+└─ outputs: canonical JSON + individual posts + combined markdown
 ```
 
 ## Server Specifications

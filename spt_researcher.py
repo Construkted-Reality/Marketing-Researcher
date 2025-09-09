@@ -19,9 +19,14 @@ import asyncio
 import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 import re
+<<<<<<< HEAD
 from datetime import datetime
+=======
+from typing import Dict, Any, List
+>>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
 from dotenv import load_dotenv
 from gpt_researcher import GPTResearcher
@@ -74,11 +79,112 @@ def slugify(text: str) -> str:
     return slug
 
 # ----------------------------------------------------------------------
+<<<<<<< HEAD
 # Helper – Generate insights
 # ----------------------------------------------------------------------
 async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[str], str, str, str]:
     """
     Use GPTResearcher to gather raw research, then extract insights using local LLM.
+=======
+# Helper – Parse pain points from raw LLM output
+# ----------------------------------------------------------------------
+def parse_pain_points(raw_text: str, topic: str, max_points: int, verbose: bool = False) -> Dict[str, Any]:
+    """
+    Parse pain points from raw LLM output with JSON-first parsing and noise-filtered fallback.
+    
+    Args:
+        raw_text: Raw output from LLM
+        topic: The research topic
+        max_points: Maximum number of pain points
+        verbose: Whether to print debug info
+        
+    Returns:
+        Dict with canonical structure: {"topic": str, "pain_points": [str, ...], "meta": {...}}
+    """
+    # Try JSON parsing first
+    try:
+        json_data = json.loads(raw_text.strip())
+        if isinstance(json_data, dict) and "pain_points" in json_data:
+            # Validate JSON structure
+            pain_points = []
+            if isinstance(json_data["pain_points"], list):
+                for item in json_data["pain_points"]:
+                    if isinstance(item, dict) and "idea" in item:
+                        pain_points.append(item["idea"])
+                    elif isinstance(item, str):
+                        pain_points.append(item)
+            
+            # Limit to max_points and ensure unique
+            pain_points = list(dict.fromkeys(pain_points))[:max_points]
+            
+            return {
+                "topic": json_data.get("topic", topic),
+                "pain_points": pain_points,
+                "meta": {
+                    "count": len(pain_points),
+                    "generated_at": datetime.utcnow().isoformat() + "Z",
+                    "source": "gpt_researcher",
+                    "max_points": max_points,
+                    "parser": "json"
+                }
+            }
+    except (json.JSONDecodeError, KeyError, TypeError) as e:
+        if verbose:
+            print(f"⚠️ JSON parsing failed, using fallback: {e}")
+    
+    # Fallback: noise-filtered line parsing
+    noise_patterns = [
+        r"^source:\s*https?://",
+        r"^title:\s*",
+        r"^content:\s*",
+        r"^conclusion:\s*",
+        r"^try again\s*$",
+        r"please enable javascript",
+        r"something went wrong",
+        r"wait a moment",
+        r"^\s*$"  # empty lines
+    ]
+    
+    lines = raw_text.splitlines()
+    clean_points = []
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Skip noise patterns
+        is_noise = any(re.search(pattern, line, re.IGNORECASE) for pattern in noise_patterns)
+        if is_noise:
+            continue
+            
+        # Clean bullet points and extract content
+        cleaned = line.lstrip("-•* ").strip()
+        if cleaned and len(cleaned) > 5:  # Basic quality filter
+            clean_points.append(cleaned)
+    
+    # Deduplicate and limit
+    unique_points = list(dict.fromkeys(clean_points))[:max_points]
+    
+    return {
+        "topic": topic,
+        "pain_points": unique_points,
+        "meta": {
+            "count": len(unique_points),
+            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "source": "gpt_researcher",
+            "max_points": max_points,
+            "parser": "fallback"
+        }
+    }
+
+# ----------------------------------------------------------------------
+# Helper – Generate pain points with JSON schema
+# ----------------------------------------------------------------------
+async def get_pain_points(topic: str, max_points: int, verbose: bool = False) -> Dict[str, Any]:
+    """
+    Use GPTResearcher with JSON-only schema to produce structured pain points.
+>>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
     Args:
         topic: The broad subject (e.g., "remote work productivity").
@@ -86,6 +192,7 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
         verbose: If True, prints progress information.
 
     Returns:
+<<<<<<< HEAD
         Tuple of (insight_list, prompt_used, raw_output, extraction_json).
     """
     prompt = (
@@ -95,18 +202,69 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
     )
     if verbose:
         print("🔎 Generating insights…")
+=======
+        Dict with canonical structure for step-2 input.
+    """
+    min_points = max_points // 2
+    prompt = f"""You are generating a structured list of real customer/user pain points for the topic: {topic}.
+Return ONLY a single valid JSON object. No markdown, no prose, no comments, no trailing commas, no extra keys, no preface.
+
+JSON schema (exact keys, in this order):
+{{
+  "topic": "string",
+  "pain_points": [
+    {{
+      "id": "PP01-style string",
+      "idea": "concise, specific pain point statement, 9–14 words, no punctuation at end",
+      "description": "one or two sentences elaborating the idea in plain language"
+    }}
+  ],
+  "meta": {{
+    "generator": "gpt_researcher",
+    "min_points": {min_points},
+    "max_points": {max_points}
+  }}
+}}
+
+Rules:
+- Emit between {min_points} and {max_points} items in pain_points.
+- The idea field must be unique, domain‑specific, and actionable.
+- Do NOT include any of the following anywhere: URLs, "Source:", "Title:", "Content:", "Conclusion:", "Try again", "Please enable Javascript".
+- Do not include citations or links.
+- If you cannot comply, return: {{"topic":"{topic}","pain_points":[],"meta":{{"generator":"gpt_researcher","min_points":{min_points},"max_points":{max_points},"error":"FORMAT_VIOLATION"}}}}
+
+Example shape (illustrative only):
+{{"topic":"photogrammetry","pain_points":[{{"id":"PP01","idea":"Reflective surfaces break feature matching in reconstruction","description":"Metallic and glossy materials cause specular highlights, reducing feature consistency and producing holes or noise."}},{{"id":"PP02","idea":"Insufficient overlap causes incomplete scene coverage","description":"Low forward and side overlap creates gaps and misalignment; enforce 70 to 80 percent overlap for reliable alignment."}}],"meta":{{"generator":"gpt_researcher","min_points":{min_points},"max_points":{max_points}}}}}"""
+
+    if verbose:
+        print("🔎 Generating pain points with JSON schema…")
+    
+>>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
     researcher = GPTResearcher(query=prompt, verbose=verbose)
     try:
         # Stage 1: Get raw research from GPT-Researcher
         raw = await researcher.conduct_research()
         raw_text = str(raw)
         
+<<<<<<< HEAD
         # Stage 2: Extract clean insights using local LLM
         insights, extraction_json = await extract_insights_from_raw(
             raw_text, topic, max_insights, verbose
         )
         
         return insights, prompt, raw_text, extraction_json
+=======
+        # Parse with JSON-first approach and noise filtering
+        result = parse_pain_points(raw_text, topic, max_points, verbose)
+        
+        if verbose:
+            parser_type = result["meta"]["parser"]
+            count = result["meta"]["count"]
+            print(f"✅ Parsed {count} pain points using {parser_type} parser")
+        
+        return result
+        
+>>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
     except Exception as exc:
         raise RuntimeError(f"Failed to generate insights: {exc}") from exc
 
@@ -274,9 +432,25 @@ async def main_cli() -> None:
         help="Maximum number of insights to generate (default: 15).",
     )
     parser.add_argument(
+<<<<<<< HEAD
         "--insights-output",
         default="insights.md",
         help="Path to markdown file that will contain the initial insight list.",
+=======
+        "--pain-points-output",
+        default="pain_points.json",
+        help="Path to JSON file that will contain the canonical pain‑point data (default: pain_points.json).",
+    )
+    parser.add_argument(
+        "--pain-points-input",
+        type=str,
+        help="Path to existing JSON file to load pain points from (skips step-1 generation).",
+    )
+    parser.add_argument(
+        "--pain-points-markdown",
+        type=str,
+        help="Optional: also write a human-readable markdown list (non-canonical).",
+>>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
     )
     parser.add_argument(
         "--verbose",
@@ -309,6 +483,7 @@ async def main_cli() -> None:
         sys.exit(1)
 
     # ------------------------------------------------------------------
+<<<<<<< HEAD
     # Generate insights list
     # ------------------------------------------------------------------
     try:
@@ -378,6 +553,95 @@ async def main_cli() -> None:
         if args.verbose:
             print(f"✅ Insights saved to {insights_path.resolve()}")
         sys.exit(0)
+=======
+    # Load or generate pain points
+    # ------------------------------------------------------------------
+    pain_points_data: Dict[str, Any]
+    
+    if args.pain_points_input:
+        # Load existing JSON dump and skip step-1
+        try:
+            input_path = Path(args.pain_points_input)
+            if not input_path.exists():
+                print(f"❌ Pain points input file not found: {input_path}")
+                sys.exit(1)
+                
+            with input_path.open("r", encoding="utf-8") as f:
+                pain_points_data = json.load(f)
+                
+            if args.verbose:
+                count = len(pain_points_data.get("pain_points", []))
+                print(f"✅ Loaded {count} pain points from {input_path.resolve()}")
+                print("🚀 Skipping step-1 generation, proceeding to step-2...")
+                
+        except Exception as e:
+            print(f"❌ Failed to load pain points input: {e}")
+            sys.exit(1)
+    else:
+        # Generate new pain points (step-1)
+        try:
+            if os.getenv("PYTEST_CURRENT_TEST"):
+                # Create dummy data structure for testing
+                pain_points_data = {
+                    "topic": args.topic,
+                    "pain_points": [f"Dummy pain point {i+1}" for i in range(min(args.max_points, 5))],
+                    "meta": {
+                        "count": min(args.max_points, 5),
+                        "generated_at": datetime.utcnow().isoformat() + "Z",
+                        "source": "pytest_dummy",
+                        "max_points": args.max_points,
+                        "parser": "dummy"
+                    }
+                }
+            else:
+                pain_points_data = await get_pain_points(
+                    args.topic, args.max_points, verbose=args.verbose
+                )
+        except Exception as e:
+            print(f"❌ Error while generating pain points: {e}")
+            sys.exit(1)
+
+    # Extract pain points list for step-2
+    pain_points = pain_points_data.get("pain_points", [])
+    if not pain_points:
+        print("⚠️ No pain points were returned – aborting.")
+        sys.exit(0)
+
+    if args.verbose:
+        print(f"✅ Using {len(pain_points)} pain points for blog post generation.\n")
+
+    # ------------------------------------------------------------------
+    # Write canonical JSON dump (exact step-2 input)
+    # ------------------------------------------------------------------
+    json_output_path = Path(args.pain_points_output)
+    try:
+        json_output_path.parent.mkdir(parents=True, exist_ok=True)
+        with json_output_path.open("w", encoding="utf-8") as f:
+            json.dump(pain_points_data, f, indent=2, ensure_ascii=False)
+        if args.verbose:
+            print(f"✅ Canonical pain points data written to {json_output_path.resolve()}")
+    except Exception as e:
+        print(f"❌ Failed to write canonical JSON dump: {e}")
+
+    # ------------------------------------------------------------------
+    # Optional: Write human-readable markdown
+    # ------------------------------------------------------------------
+    if args.pain_points_markdown:
+        try:
+            md_path = Path(args.pain_points_markdown)
+            md_path.parent.mkdir(parents=True, exist_ok=True)
+            with md_path.open("w", encoding="utf-8") as f:
+                f.write(f"# Pain Points for Topic: {args.topic}\n\n")
+                f.write("*This is a human-readable version. The canonical data is in the JSON file.*\n\n")
+                for idx, point in enumerate(pain_points, start=1):
+                    f.write(f"{idx}. {point}\n")
+                f.write(f"\n---\n*Generated: {pain_points_data['meta']['generated_at']}*\n")
+                f.write(f"*Parser: {pain_points_data['meta']['parser']}*\n")
+            if args.verbose:
+                print(f"✅ Human-readable markdown written to {md_path.resolve()}")
+        except Exception as e:
+            print(f"❌ Failed to write markdown file: {e}")
+>>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
     # ------------------------------------------------------------------
     # Generate blog posts

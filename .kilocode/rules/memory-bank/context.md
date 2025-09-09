@@ -36,6 +36,7 @@ Search configuration clarification:
 - ✅ Validated end-to-end SearXNG research workflow with professional report output
 
 ## Current Work Focus
+<<<<<<< HEAD
 **SPT Researcher Insights-Only Mode (September 9, 2025)**: Added `--insights-only` command line switch to `spt_researcher.py` that stops execution after generating insights but before creating blog posts. This provides users with a faster way to get research insights without the time-consuming blog post generation phase.
 
 **New Feature**:
@@ -58,6 +59,18 @@ Search configuration clarification:
 - JSON-first approach eliminates brittle regex/line-based parsing
 - Multiple fallback strategies ensure robustness
 - Enhanced debugging for troubleshooting extraction issues
+=======
+**SPT Researcher JSON-First Architecture Complete**: Successfully implemented JSON-only schema approach for `spt_researcher.py` to solve step-1 output parsing issues.
+
+**Major Enhancement**: Transformed SPT researcher from noisy markdown output to canonical JSON dump workflow:
+- **JSON-First Schema**: Step-1 now uses strict JSON-only prompts with noise filtering
+- **Canonical Dumps**: Exact step-2 input payload written to `pain_points.json` for troubleshooting
+- **Reproducible Workflows**: `--pain-points-input` flag allows step-2 iteration without re-generation
+- **Enhanced Testing**: 5 comprehensive test functions covering all new functionality
+- **Complete Documentation**: Updated SPT_RESEARCHER_GUIDE.md with usage patterns and troubleshooting
+
+The script eliminates web scraping artifacts like "Source:", "Try again", "Please enable Javascript" through robust parsing and produces clean, structured pain points for reliable step-2 processing.
+>>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
 ## Active Configuration
 - **vLLM Server**: 192.168.8.90:42069 (gpt-oss-120b model)
@@ -72,6 +85,7 @@ Search configuration clarification:
 3. Explore additional privacy-first research tools and integrations
 4. Document maintenance procedures for SearXNG instance management
 
+<<<<<<< HEAD
 ## Key Files Modified Recently
 **SPT Researcher Insights-Only Mode (September 9, 2025):**
 - Added `--insights-only` command line argument to argument parser
@@ -90,6 +104,15 @@ Search configuration clarification:
 **Previous Enhancements:**
 - **SearXNG Integration (September 7, 2025)**: Complete privacy-first search integration
 - **SPT Researcher Debug Enhancement (September 8, 2025)**: Timestamped debug sessions and comprehensive output logging
+=======
+## Key Files Modified Today (SPT Researcher JSON-First Architecture)
+- **`spt_researcher.py`**: Complete rewrite with JSON-first architecture, canonical dumps, and enhanced CLI
+- **`test_spt_researcher.py`**: Comprehensive test suite with 5 test functions covering all scenarios
+- **`SPT_RESEARCHER_GUIDE.md`**: Complete documentation rewrite with troubleshooting workflows
+- Added `parse_pain_points()` helper with JSON-first parsing and noise-filtered fallback
+- Implemented `--pain-points-input`, `--pain-points-output`, `--pain-points-markdown` CLI flags
+- Enhanced verbose logging and error handling throughout
+>>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
 ## Performance Metrics
 - Research report generation: ~2 minutes end-to-end (both SearXNG and Tavily)
