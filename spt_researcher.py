@@ -5,7 +5,7 @@
 # --------------------------------------------------------------
 # Usage:
 #   python spt_researcher.py --topic "remote work productivity" \
-#       [--output generated_posts.md] [--max-insights 15] [--verbose]
+#       [--output generated_posts.md] [--max-insights 15] [--verbose] [--insights-only]
 #
 # The script:
 #   1. Loads .env variables (API keys, endpoints, etc.).
@@ -192,8 +192,7 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
     prompt = (
         f"List between {max_insights // 2} and {max_insights} specific, "
         f"actionable insights and key topics that content creators should explore related to "
-        f"the topic '{topic}'. Return the list as plain bullet points, one per line, "
-        f"without any additional commentary."
+        f"the topic '{topic}'. "
     )
     if verbose:
         print("🔎 Generating insights…")
@@ -284,6 +283,11 @@ async def main_cli() -> None:
         action="store_true",
         help="Enable detailed progress logging.",
     )
+    parser.add_argument(
+        "--insights-only",
+        action="store_true",
+        help="Generate only insights and stop before creating blog posts.",
+    )
     args = parser.parse_args()
 
     # ------------------------------------------------------------------
@@ -356,6 +360,15 @@ async def main_cli() -> None:
             print(f"✅ Insights debug information appended to {insights_path.resolve()}")
     except Exception as e:
         print(f"❌ Failed to write insights file: {e}")
+
+    # ------------------------------------------------------------------
+    # Exit early if insights-only mode is enabled
+    # ------------------------------------------------------------------
+    if args.insights_only:
+        print(f"✅ Insights-only mode: Generated {len(insights)} insights and stopped before blog post creation.")
+        if args.verbose:
+            print(f"✅ Insights saved to {insights_path.resolve()}")
+        sys.exit(0)
 
     # ------------------------------------------------------------------
     # Generate blog posts

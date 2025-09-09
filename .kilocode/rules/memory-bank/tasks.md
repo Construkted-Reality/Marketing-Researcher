@@ -383,3 +383,127 @@ pipenv run python spt_researcher.py --topic "your topic" --max-insights 5 --verb
 - Enhanced debug output includes new "Extracted Insights (JSON)" section
 - Console debugging shows real-time JSON extraction process
 - Maintains backward compatibility for all other script functionality
+
+## Task: Add SPT Researcher Insights-Only Mode
+**Last performed:** September 9, 2025
+**Files modified:**
+- `spt_researcher.py` - Added `--insights-only` command line switch
+
+**Steps:**
+1. Add new CLI argument `--insights-only` to argument parser with description
+2. Update usage documentation in file header comments to include new flag
+3. Implement early exit logic after insights file writing but before blog post generation
+4. Add conditional check for `args.insights_only` flag after insights are written
+5. Display success message showing number of insights generated
+6. Exit cleanly with `sys.exit(0)` before blog post generation begins
+
+**New functionality:**
+- Insights-only mode stops execution after generating and writing insights
+- Preserves all existing functionality when flag is not used
+- Provides faster workflow for users who only need research insights
+- Clean exit with informative success message
+
+**Usage examples:**
+```bash
+# Generate only insights for a topic
+python spt_researcher.py --topic "remote work productivity" --insights-only
+
+# Generate insights with custom output file and verbose logging
+python spt_researcher.py --topic "AI automation" --insights-only --insights-output "ai_insights.md" --verbose
+
+# Generate insights with custom max count
+python spt_researcher.py --topic "digital marketing trends" --insights-only --max-insights 10
+```
+
+**Benefits:**
+- **Faster Workflow**: Skip time-consuming blog post generation when only insights are needed
+- **Iterative Research**: Quickly generate insights to evaluate topic viability before committing to full blog post creation
+- **Resource Efficiency**: Reduces processing time and server usage for insight-only research
+- **Flexible Usage**: Maintains backward compatibility while adding new capability
+
+**Important notes:**
+- Exit occurs after all insights debug information is written to file
+- Success message includes count of insights generated
+- All existing command line arguments remain functional with insights-only mode
+- Maintains complete debug information output for insights extraction process
+## Task: Migrate GPT Researcher LLM Env Vars to New Format
+Last performed: 2025-09-09
+Files to modify:
+- `.env`
+
+Purpose:
+- Remove deprecated env vars that trigger FutureWarning and configure GPT Researcher with the new provider-specific variables while preserving local extractor settings used by the insights extractor in [extract_insights_from_raw()](spt_researcher.py:79).
+
+Deprecated variables to remove/comment:
+- LLM_PROVIDER
+- FAST_LLM_MODEL
+- SMART_LLM_MODEL
+
+New variables to use:
+- FAST_LLM
+- SMART_LLM
+- STRATEGIC_LLM (optional)
+- Provider-specific keys for vLLM OpenAI:
+  - VLLM_OPENAI_API_BASE
+  - VLLM_OPENAI_API_KEY
+
+Keep these for local extractor used by the script:
+- OPENAI_API_KEY
+- OPENAI_API_BASE
+- OPENAI_MODEL_NAME
+
+Steps:
+1) Open `.env` and comment/remove deprecated keys:
+   - Example: change to `# LLM_PROVIDER=openai`
+   - Ensure there is no FAST_LLM_MODEL or SMART_LLM_MODEL anywhere (shell or file).
+2) Add or update new LLM config for GPT Researcher (vLLM OpenAI provider):
+   - FAST_LLM=vllm_openai:gpt-oss-120b (see [.env](.env:50))
+   - SMART_LLM=vllm_openai:gpt-oss-120b (see [.env](.env:51))
+   - STRATEGIC_LLM=vllm_openai:gpt-oss-120b (see [.env](.env:52))
+   - VLLM_OPENAI_API_BASE=http://192.168.8.90:42069/v1 (see [.env](.env:9))
+   - VLLM_OPENAI_API_KEY=outsider (see [.env](.env:5))
+3) Preserve local extractor settings for the OpenAI client used by the script:
+   - OPENAI_API_KEY=outsider (see [.env](.env:5) or [.env](.env:4) if present)
+   - OPENAI_API_BASE=http://192.168.8.90:42069/v1 (see [.env](.env:8))
+   - OPENAI_MODEL_NAME=gpt-oss-120b (see [.env](.env:12))
+4) Configure search engines with RETRIEVER (not SEARCH_PROVIDER):
+   - Example: `RETRIEVER=searx,mcp` (privacy-first hybrid) or `RETRIEVER=tavily,mcp` (see [.env](.env:27))
+   - Provide matching API envs (e.g., `SEARX_URL` or `TAVILY_API_KEY`).
+5) Set scraper method to match environment:
+   - Example: `SCRAPER=bs` or `SCRAPER=tavily_extract` (see [.env](.env:44)).
+6) Reload environment (new shell or re-source env) to clear deprecated variables from the process environment.
+7) Validate:
+   - vLLM connectivity: `pipenv run python test_vllm_direct.py` ([test_vllm_direct.py](test_vllm_direct.py:1))
+   - Retriever connectivity (if SearXNG): `pipenv run python test_searxng_direct.py` ([test_searxng_direct.py](test_searxng_direct.py:1))
+   - Run insights-only to verify pipeline: `pipenv run python spt_researcher.py --topic "test" --insights-only --verbose` ([main_cli()](spt_researcher.py:256))
+
+Example .env (post-migration):
+```env
+# vLLM OpenAI provider for GPT Researcher
+FAST_LLM=vllm_openai:gpt-oss-120b
+SMART_LLM=vllm_openai:gpt-oss-120b
+STRATEGIC_LLM=vllm_openai:gpt-oss-120b
+VLLM_OPENAI_API_BASE=http://192.168.8.90:42069/v1
+VLLM_OPENAI_API_KEY=outsider
+
+# Local extractor used by spt_researcher.py
+OPENAI_API_KEY=outsider
+OPENAI_API_BASE=http://192.168.8.90:42069/v1
+OPENAI_MODEL_NAME=gpt-oss-120b
+
+# Search engines and scraper
+RETRIEVER=searx,mcp
+SEARX_URL=https://search.roci.me/
+# TAVILY_API_KEY=your_tavily_key_if_used
+SCRAPER=bs
+```
+
+Failure modes and resolutions:
+- Warning persists: A deprecated variable is still set in the shell. Open a new terminal and verify with `env | grep -E "LLM_PROVIDER|FAST_LLM_MODEL|SMART_LLM_MODEL"`.
+- GPT Researcher returns None for LLM calls after migration: Add `VLLM_OPENAI_API_BASE` and `VLLM_OPENAI_API_KEY` to `.env` (provider-specific).
+- Script errors with `OPENAI_API_BASE not set`: Restore `OPENAI_*` variables; they are required by [load_environment()](spt_researcher.py:33).
+- Misleading variable: `SEARCH_PROVIDER` is unused by current GPT Researcher in this repo; use `RETRIEVER` instead.
+
+Notes:
+- This migration satisfies the FutureWarning emitted by GPT Researcher and preserves end-to-end functionality by distinguishing between GPT Researcher provider config (using `VLLM_OPENAI_*`) and the script’s local extractor config (`OPENAI_*`).
+- Confirmed via GPT Researcher docs (Context7) for vLLM OpenAI provider and `FAST_LLM`/`SMART_LLM` usage.
