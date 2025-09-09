@@ -295,6 +295,15 @@ async def main_cli() -> None:
     # ------------------------------------------------------------------
     try:
         load_environment()
+        
+        # Debug: Verify temperature settings are loaded from .env
+        print(f"🔧 [DEBUG] Temperature settings loaded from .env:")
+        print(f"   TEMPERATURE: {os.getenv('TEMPERATURE', 'not set')}")
+        print(f"   FAST_TEMPERATURE: {os.getenv('FAST_TEMPERATURE', 'not set')}")
+        print(f"   SMART_TEMPERATURE: {os.getenv('SMART_TEMPERATURE', 'not set')}")
+        print(f"   STRATEGIC_TEMPERATURE: {os.getenv('STRATEGIC_TEMPERATURE', 'not set')}")
+        print()
+        
     except Exception as e:
         print(f"❌ Environment setup error: {e}")
         sys.exit(1)
