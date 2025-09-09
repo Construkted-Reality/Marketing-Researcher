@@ -74,6 +74,43 @@ def slugify(text: str) -> str:
     return slug
 
 # ----------------------------------------------------------------------
+# Helper – Generate insights
+# ----------------------------------------------------------------------
+async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[str], str, str, str]:
+    """
+    Use GPTResearcher to gather raw research, then extract insights using local LLM.
+
+    Args:
+        topic: The broad subject (e.g., "remote work productivity").
+        max_insights: Upper bound of insights to request.
+        verbose: If True, prints progress information.
+
+    Returns:
+        Tuple of (insight_list, prompt_used, raw_output, extraction_json).
+    """
+    prompt = (
+        f"List between {max_insights // 2} and {max_insights} specific, "
+        f"actionable insights and key topics that content creators should explore related to "
+        f"the topic '{topic}'. "
+    )
+    if verbose:
+        print("🔎 Generating insights…")
+    researcher = GPTResearcher(query=prompt, verbose=verbose)
+    try:
+        # Stage 1: Get raw research from GPT-Researcher
+        raw = await researcher.conduct_research()
+        raw_text = str(raw)
+        
+        # Stage 2: Extract clean insights using local LLM
+        insights, extraction_json = await extract_insights_from_raw(
+            raw_text, topic, max_insights, verbose
+        )
+        
+        return insights, prompt, raw_text, extraction_json
+    except Exception as exc:
+        raise RuntimeError(f"Failed to generate insights: {exc}") from exc
+
+# ----------------------------------------------------------------------
 # Helper – Extract insights from raw research using local LLM
 # ----------------------------------------------------------------------
 async def extract_insights_from_raw(
@@ -116,7 +153,7 @@ Research to analyze:
     try:
         response = await asyncio.to_thread(
             client.chat.completions.create,
-            model=os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo"),
+            model=os.getenv("OPENAI_MODEL_NAME", "none"),
             messages=[
                 {"role": "system", "content": "You extract actionable insights from research data. Always return valid JSON arrays only."},
                 {"role": "user", "content": extraction_prompt}
@@ -173,43 +210,6 @@ Research to analyze:
                 fallback_insights.append(line)
         
         return fallback_insights[:max_insights], f"Extraction failed: {str(e)}"
-
-# ----------------------------------------------------------------------
-# Helper – Generate insights
-# ----------------------------------------------------------------------
-async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[str], str, str, str]:
-    """
-    Use GPTResearcher to gather raw research, then extract insights using local LLM.
-
-    Args:
-        topic: The broad subject (e.g., "remote work productivity").
-        max_insights: Upper bound of insights to request.
-        verbose: If True, prints progress information.
-
-    Returns:
-        Tuple of (insight_list, prompt_used, raw_output, extraction_json).
-    """
-    prompt = (
-        f"List between {max_insights // 2} and {max_insights} specific, "
-        f"actionable insights and key topics that content creators should explore related to "
-        f"the topic '{topic}'. "
-    )
-    if verbose:
-        print("🔎 Generating insights…")
-    researcher = GPTResearcher(query=prompt, verbose=verbose)
-    try:
-        # Stage 1: Get raw research from GPT-Researcher
-        raw = await researcher.conduct_research()
-        raw_text = str(raw)
-        
-        # Stage 2: Extract clean insights using local LLM
-        insights, extraction_json = await extract_insights_from_raw(
-            raw_text, topic, max_insights, verbose
-        )
-        
-        return insights, prompt, raw_text, extraction_json
-    except Exception as exc:
-        raise RuntimeError(f"Failed to generate insights: {exc}") from exc
 
 # ----------------------------------------------------------------------
 # Helper – Generate a blog post draft for a single insight

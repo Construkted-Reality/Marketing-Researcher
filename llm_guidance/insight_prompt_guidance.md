@@ -1,0 +1,2 @@
+I am looking for a list of blog post ideas based on real user pain points and problems, which I can use as marketing content on my company blog to bring people to the website. 
+Please search for problems users are asking for help on, and pain points they may be experiencing.
