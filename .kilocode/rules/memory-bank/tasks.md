@@ -235,14 +235,14 @@
 ## Task: Enhance SPT Researcher with File Output
 **Last performed:** September 8, 2025
 **Files modified:**
-- `spt_researcher.py` - Enhanced with pain-point file output and individual blog post files
+- `spt_researcher.py` - Enhanced with insights file output and individual blog post files
 - `Pipfile` - Added pytest as dev dependency
 - `test_spt_researcher.py` - Updated to handle new functionality
 
 **Steps:**
-1. Add new CLI argument `--pain-points-output` for specifying pain-point output file
+1. Add new CLI argument `--insights-output` for specifying insights output file
 2. Create `slugify(text: str) -> str` helper for safe filename generation
-3. Write pain-point list to separate markdown file after generation
+3. Write insights list to separate markdown file after generation
 4. Extract article titles from generated blog posts (first `#` or `##` heading)
 5. Save each blog post as individual markdown file in `posts/` directory
 6. Use slugified title as filename for each blog post
@@ -252,7 +252,7 @@
 10. Update memory bank to reflect changes
 
 **New functionality:**
-- Pain points saved to `pain_points.md` (or custom filename via `--pain-points-output`)
+- Insights saved to `insights.md` (or custom filename via `--insights-output`)
 - Individual blog posts saved to `posts/<slugified-title>.md`
 - Maintains original combined output in addition to new separate files
 - Test suite optimized for fast execution during development
@@ -262,8 +262,8 @@
 # Basic usage with new file outputs
 python spt_researcher.py --topic "remote work" --verbose
 
-# Custom pain-points filename
-python spt_researcher.py --topic "remote work" --pain-points-output "my_painpoints.md"
+# Custom insights filename
+python spt_researcher.py --topic "remote work" --insights-output "my_insights.md"
 
 # Run tests quickly
 PYTEST_CURRENT_TEST=1 pipenv run pytest -q test_spt_researcher.py
@@ -271,6 +271,115 @@ PYTEST_CURRENT_TEST=1 pipenv run pytest -q test_spt_researcher.py
 
 **Important notes:**
 - Individual blog post files use article title as filename when available
-- Falls back to pain-point text if no title found in markdown
+- Falls back to insight text if no title found in markdown
 - All directory creation is automatic (`posts/` directory created as needed)
 - Test mode uses dummy data to avoid long LLM calls during testing
+
+## Task: Add SPT Researcher Debug Enhancement
+**Last performed:** September 8, 2025
+**Files modified:**
+- `spt_researcher.py` - Enhanced with comprehensive debugging functionality for insight generation
+
+**Steps:**
+1. Add `datetime` import for timestamping debug sessions
+2. Modify `get_insights()` function to return tuple: `(insights, prompt_used, raw_output)`
+3. Update function call in main workflow to handle new tuple return
+4. Replace simple insights file writing with debug-enhanced version
+5. Implement append-mode writing with timestamped sessions
+6. Include prompt, raw output, and parsed results in debug file
+7. Test functionality and update memory bank documentation
+
+**New debug functionality:**
+- **Timestamped Sessions**: Each run appends a new debug section with timestamp
+- **Complete Prompt Visibility**: Shows exact prompt sent to GPT Researcher
+- **Raw Model Output**: Preserves unprocessed response from the AI model
+- **Parsed Results**: Shows final insight list after processing
+- **History Preservation**: Maintains all previous debug sessions in append mode
+
+**Debug output format:**
+```markdown
+# Insights Debug Session: 2025-09-08 23:04:41
+
+**Topic:** [user topic]
+**Max Insights:** [max_insights value]
+
+## Prompt Used
+
+```
+[exact prompt sent to GPT Researcher]
+```
+
+## Raw Model Output
+
+```
+[unprocessed response from AI model]
+```
+
+## Parsed Insights
+
+1. [first parsed insight]
+2. [second parsed insight]
+...
+```
+
+**Usage:**
+- Same CLI usage as before: `pipenv run python spt_researcher.py --topic "your topic" --verbose`
+- Debug information automatically written to insights output file (default: `insights.md`)
+- Custom debug file: `--insights-output "custom_debug.md"`
+
+**Benefits:**
+- **Complete AI Agent Visibility**: See exactly what prompt was used and how the model responded
+- **Debugging Support**: Easily identify why certain insights were generated or missed
+- **Prompt Engineering**: Understand how different prompts affect output quality
+- **Historical Analysis**: Track how insight generation changes over time
+- **Troubleshooting**: Quickly identify parsing issues or unexpected model behavior
+
+## Task: Fix SPT Researcher Two-Stage Insight Extraction
+**Last performed:** September 9, 2025
+**Files modified:**
+- `spt_researcher.py` - Implemented two-stage insight extraction with local vLLM
+
+**Problem:**
+- GPT-Researcher returns research corpus data instead of clean bullet lists
+- Line-by-line parsing produced garbage insights from complex web content
+- Previous approach was brittle and unreliable
+
+**Solution implemented:**
+- **Stage 1**: GPT-Researcher gathers raw research data from web sources
+- **Stage 2**: Local vLLM server extracts clean JSON array of actionable insights
+- **Robust fallback**: Heuristic parsing if JSON extraction fails
+
+**Steps taken:**
+1. Added JSON import and OpenAI client setup for local vLLM integration
+2. Implemented `extract_insights_from_raw()` function with JSON-first approach
+3. Modified `get_insights()` to use two-stage approach (GPT-Researcher + extractor)
+4. Enhanced debugging output to include JSON extraction stage
+5. Added console debugging for real-time visibility during extraction
+6. Updated function signatures to handle new tuple return format
+7. Added comprehensive fallback strategies for robustness
+
+**Technical details:**
+- Uses local vLLM server (maintains privacy)
+- JSON-first parsing eliminates brittle regex/line-based parsing
+- Multiple fallback strategies ensure reliability
+- Enhanced debugging shows exact JSON output from extractor
+- Temperature 0.3 for consistent extraction results
+- 20k character limit on raw input to avoid token limits
+
+**Usage:**
+```bash
+pipenv run python spt_researcher.py --topic "your topic" --max-insights 5 --verbose
+```
+
+**Benefits:**
+- Reliable insight extraction regardless of GPT-Researcher output format
+- Local processing maintains complete privacy
+- Robust error handling with multiple fallback strategies
+- Enhanced debugging for troubleshooting extraction issues
+- JSON-structured output enables future extensibility
+
+**Important notes:**
+- Function signature changed: `get_insights()` now returns 4-tuple instead of 3-tuple
+- Enhanced debug output includes new "Extracted Insights (JSON)" section
+- Console debugging shows real-time JSON extraction process
+- Maintains backward compatibility for all other script functionality

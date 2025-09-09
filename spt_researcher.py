@@ -1,28 +1,31 @@
 #!/usr/bin/env python3
 # File: spt_researcher.py
 # --------------------------------------------------------------
-# Content‑Marketing Research – Pain‑Point & Blog‑Post Generator
+# Content‑Marketing Research – Insights & Blog‑Post Generator
 # --------------------------------------------------------------
 # Usage:
 #   python spt_researcher.py --topic "remote work productivity" \
-#       [--output generated_posts.md] [--max-points 15] [--verbose]
+#       [--output generated_posts.md] [--max-insights 15] [--verbose]
 #
 # The script:
 #   1. Loads .env variables (API keys, endpoints, etc.).
-#   2. Generates a list of pain points via GPT‑Researcher.
-#   3. For each pain point, generates a blog‑post draft.
+#   2. Generates a list of insights via GPT‑Researcher.
+#   3. For each insight, generates a blog‑post draft.
 #   4. Writes the combined markdown to the output file.
 # --------------------------------------------------------------
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
 import re
+from datetime import datetime
 
 from dotenv import load_dotenv
 from gpt_researcher import GPTResearcher
+from openai import OpenAI
 
 # ----------------------------------------------------------------------
 # Helper – Load environment & ensure required variables are present
@@ -71,56 +74,156 @@ def slugify(text: str) -> str:
     return slug
 
 # ----------------------------------------------------------------------
-# Helper – Generate pain points
+# Helper – Extract insights from raw research using local LLM
 # ----------------------------------------------------------------------
-async def get_pain_points(topic: str, max_points: int, verbose: bool = False) -> list[str]:
+async def extract_insights_from_raw(
+    raw_text: str, topic: str, max_insights: int, verbose: bool = False
+) -> tuple[list[str], str]:
     """
-    Use GPTResearcher to produce a bullet‑list of user pain points.
+    Extract clean insights from raw GPT-Researcher output using local vLLM.
+    
+    Args:
+        raw_text: Raw research output from GPT-Researcher
+        topic: The research topic
+        max_insights: Maximum number of insights to extract
+        verbose: If True, prints progress information
+        
+    Returns:
+        Tuple of (insights_list, extraction_json_output)
+    """
+    # Create OpenAI client using the configured vLLM endpoint
+    client = OpenAI(
+        api_key=os.getenv("OPENAI_API_KEY", "sk-dummy-key-if-not-needed"),
+        base_url=os.getenv("OPENAI_API_BASE")
+    )
+    
+    # Limit raw text to avoid token limits (keep first ~20k chars)
+    truncated_raw = raw_text[:20000] if len(raw_text) > 20000 else raw_text
+    
+    extraction_prompt = f"""You are a content marketing analyst. Extract {max_insights} specific, actionable insights from the research below for the topic "{topic}".
+
+Return ONLY a valid JSON array of strings, with no additional text or formatting. Each insight should be a short, actionable statement that content creators can use.
+
+Example format:
+["First insight here", "Second insight here", "Third insight here"]
+
+Research to analyze:
+{truncated_raw}"""
+
+    if verbose:
+        print("🔍 Extracting insights using local LLM...")
+    
+    try:
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model=os.getenv("OPENAI_MODEL_NAME", "gpt-3.5-turbo"),
+            messages=[
+                {"role": "system", "content": "You extract actionable insights from research data. Always return valid JSON arrays only."},
+                {"role": "user", "content": extraction_prompt}
+            ],
+            temperature=0.7,
+            max_tokens=2000
+        )
+        
+        json_output = response.choices[0].message.content
+        if json_output is None:
+            raise ValueError("Empty response from LLM")
+        json_output = json_output.strip()
+        
+        # Try to parse JSON
+        try:
+            if verbose:
+                print(f"🔍 JSON extraction output:\n{json_output}\n")
+            
+            insights = json.loads(json_output)
+            if isinstance(insights, list) and all(isinstance(item, str) for item in insights):
+                # Limit to max_insights and clean up
+                cleaned_insights = [insight.strip() for insight in insights[:max_insights] if insight.strip()]
+                if verbose:
+                    print(f"✅ Extracted {len(cleaned_insights)} insights from JSON")
+                return cleaned_insights, json_output
+            else:
+                raise ValueError("JSON is not a list of strings")
+        except (json.JSONDecodeError, ValueError) as e:
+            if verbose:
+                print(f"⚠️ JSON parsing failed: {e}, falling back to heuristic parsing")
+                print(f"🔍 Raw JSON output was:\n{json_output}\n")
+            # Fallback to heuristic parsing
+            fallback_insights = []
+            for line in json_output.splitlines():
+                line = line.strip()
+                if line and not line.startswith(('[', ']', '{', '}')):
+                    # Remove quotes and common prefixes
+                    cleaned = line.strip('",').lstrip('-•* ').strip()
+                    if cleaned and len(cleaned) > 10:  # Reasonable minimum length
+                        fallback_insights.append(cleaned)
+            
+            if verbose:
+                print(f"✅ Heuristic parsing extracted {len(fallback_insights[:max_insights])} insights")
+            return fallback_insights[:max_insights], json_output
+            
+    except Exception as e:
+        if verbose:
+            print(f"⚠️ Extraction failed: {e}, using fallback method")
+        # Final fallback: simple line-based parsing of original raw text
+        fallback_insights = []
+        for line in raw_text.splitlines():
+            line = line.strip().lstrip('-•* ').strip()
+            if line and len(line) > 10 and len(line) < 200:  # Reasonable insight length
+                fallback_insights.append(line)
+        
+        return fallback_insights[:max_insights], f"Extraction failed: {str(e)}"
+
+# ----------------------------------------------------------------------
+# Helper – Generate insights
+# ----------------------------------------------------------------------
+async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[str], str, str, str]:
+    """
+    Use GPTResearcher to gather raw research, then extract insights using local LLM.
 
     Args:
         topic: The broad subject (e.g., "remote work productivity").
-        max_points: Upper bound of pain points to request.
+        max_insights: Upper bound of insights to request.
         verbose: If True, prints progress information.
 
     Returns:
-        List of pain‑point strings.
+        Tuple of (insight_list, prompt_used, raw_output, extraction_json).
     """
     prompt = (
-        f"List between {max_points // 2} and {max_points} specific, "
-        f"real‑world pain points that customers or users experience related to "
+        f"List between {max_insights // 2} and {max_insights} specific, "
+        f"actionable insights and key topics that content creators should explore related to "
         f"the topic '{topic}'. Return the list as plain bullet points, one per line, "
         f"without any additional commentary."
     )
     if verbose:
-        print("🔎 Generating pain points…")
+        print("🔎 Generating insights…")
     researcher = GPTResearcher(query=prompt, verbose=verbose)
     try:
+        # Stage 1: Get raw research from GPT-Researcher
         raw = await researcher.conduct_research()
-        # `conduct_research` returns a string (or dict). Cast to str.
         raw_text = str(raw)
-        # Split on newlines, strip bullet characters, and filter empties.
-        points = [
-            line.lstrip("-•* ").strip()
-            for line in raw_text.splitlines()
-            if line.strip()
-        ]
-        # Trim to max_points if the model returned more.
-        return points[:max_points]
+        
+        # Stage 2: Extract clean insights using local LLM
+        insights, extraction_json = await extract_insights_from_raw(
+            raw_text, topic, max_insights, verbose
+        )
+        
+        return insights, prompt, raw_text, extraction_json
     except Exception as exc:
-        raise RuntimeError(f"Failed to generate pain points: {exc}") from exc
+        raise RuntimeError(f"Failed to generate insights: {exc}") from exc
 
 # ----------------------------------------------------------------------
-# Helper – Generate a blog post draft for a single pain point
+# Helper – Generate a blog post draft for a single insight
 # ----------------------------------------------------------------------
 async def generate_blog_post(
-    topic: str, pain_point: str, verbose: bool = False
+    topic: str, insight: str, verbose: bool = False
 ) -> str:
     """
-    Generate a markdown‑formatted blog post (outline/draft) for a given pain point.
+    Generate a markdown‑formatted blog post (outline/draft) for a given insight.
 
     Args:
         topic: The overarching topic supplied by the user.
-        pain_point: One of the pain points returned by `get_pain_points`.
+        insight: One of the insights returned by `get_insights`.
         verbose: If True, prints progress information.
 
     Returns:
@@ -128,15 +231,15 @@ async def generate_blog_post(
     """
     prompt = (
         f"Write a concise, well‑structured blog post (in markdown) that "
-        f"addresses the following pain point:\n\n"
-        f"**Pain point:** {pain_point}\n\n"
+        f"explores the following insight:\n\n"
+        f"**Insight:** {insight}\n\n"
         f"The post should be framed within the broader topic '{topic}'. "
         f"Include an engaging introduction, 2‑3 sub‑sections with headings, "
         f"and a short conclusion. Use bullet points where appropriate and "
         f"maintain a professional tone suitable for a content‑marketing audience."
     )
     if verbose:
-        print(f"🖋️ Generating blog post for: {pain_point[:60]}…")
+        print(f"🖋️ Generating blog post for: {insight[:60]}…")
     researcher = GPTResearcher(query=prompt, verbose=verbose)
     try:
         # `write_report` produces the final formatted output.
@@ -145,7 +248,7 @@ async def generate_blog_post(
         return str(report)
     except Exception as exc:
         raise RuntimeError(
-            f"Failed to generate blog post for '{pain_point}': {exc}"
+            f"Failed to generate blog post for '{insight}': {exc}"
         ) from exc
 
 # ----------------------------------------------------------------------
@@ -153,7 +256,7 @@ async def generate_blog_post(
 # ----------------------------------------------------------------------
 async def main_cli() -> None:
     parser = argparse.ArgumentParser(
-        description="Generate pain points and blog‑post drafts using GPT‑Researcher."
+        description="Generate insights and blog‑post drafts using GPT‑Researcher."
     )
     parser.add_argument(
         "--topic",
@@ -166,15 +269,15 @@ async def main_cli() -> None:
         help="Path to the markdown file that will contain the results.",
     )
     parser.add_argument(
-        "--max-points",
+        "--max-insights",
         type=int,
         default=15,
-        help="Maximum number of pain points to generate (default: 15).",
+        help="Maximum number of insights to generate (default: 15).",
     )
     parser.add_argument(
-        "--pain-points-output",
-        default="pain_points.md",
-        help="Path to markdown file that will contain the initial pain‑point list.",
+        "--insights-output",
+        default="insights.md",
+        help="Path to markdown file that will contain the initial insight list.",
     )
     parser.add_argument(
         "--verbose",
@@ -193,61 +296,87 @@ async def main_cli() -> None:
         sys.exit(1)
 
     # ------------------------------------------------------------------
-    # Generate pain points list
+    # Generate insights list
     # ------------------------------------------------------------------
     try:
         # If running under pytest, use dummy data to avoid long LLM calls
         if os.getenv("PYTEST_CURRENT_TEST"):
-            pain_points = [f"Dummy pain point {i+1}" for i in range(min(args.max_points, 5))]
+            insights = [f"Dummy insight {i+1}" for i in range(min(args.max_insights, 5))]
+            prompt_used = f"Dummy prompt for topic '{args.topic}'"
+            raw_output = "Dummy raw output for testing"
+            extraction_json = '["Dummy insight 1", "Dummy insight 2"]'
         else:
-            pain_points = await get_pain_points(
-                args.topic, args.max_points, verbose=args.verbose
+            insights, prompt_used, raw_output, extraction_json = await get_insights(
+                args.topic, args.max_insights, verbose=args.verbose
             )
     except Exception as e:
-        print(f"❌ Error while generating pain points: {e}")
+        print(f"❌ Error while generating insights: {e}")
         sys.exit(1)
 
-    if not pain_points:
-        print("⚠️ No pain points were returned – aborting.")
+    if not insights:
+        print("⚠️ No insights were returned – aborting.")
         sys.exit(0)
 
     if args.verbose:
-        print(f"✅ Retrieved {len(pain_points)} pain points.\n")
+        print(f"✅ Retrieved {len(insights)} insights.\n")
 
     # ------------------------------------------------------------------
-    # Write pain‑points to separate markdown file
+    # Write insights to separate markdown file with debug information
     # ------------------------------------------------------------------
-    pain_points_path = Path(args.pain_points_output)
+    insights_path = Path(args.insights_output)
     try:
-        pain_points_path.parent.mkdir(parents=True, exist_ok=True)
-        with pain_points_path.open("w", encoding="utf-8") as f:
-            f.write(f"# Pain Points for Topic: {args.topic}\n\n")
-            for idx, point in enumerate(pain_points, start=1):
-                f.write(f"- {point}\n")
+        insights_path.parent.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Append mode to preserve history
+        with insights_path.open("a", encoding="utf-8") as f:
+            # Add separator if file already has content
+            if insights_path.exists() and insights_path.stat().st_size > 0:
+                f.write("\n\n---\n\n")
+            
+            f.write(f"# Insights Debug Session: {timestamp}\n\n")
+            f.write(f"**Topic:** {args.topic}\n")
+            f.write(f"**Max Insights:** {args.max_insights}\n\n")
+            
+            f.write("## Prompt Used\n\n")
+            f.write(f"```\n{prompt_used}\n```\n\n")
+            
+            f.write("## Raw Model Output\n\n")
+            f.write(f"```\n{raw_output}\n```\n\n")
+            
+            f.write("## Extracted Insights (JSON)\n\n")
+            f.write(f"```json\n{extraction_json}\n```\n\n")
+            
+            f.write("## Parsed Insights\n\n")
+            for idx, insight in enumerate(insights, start=1):
+                f.write(f"{idx}. {insight}\n")
+            f.write("\n")
+        
         if args.verbose:
-            print(f"✅ Pain points written to {pain_points_path.resolve()}")
+            print(f"✅ Insights debug information appended to {insights_path.resolve()}")
     except Exception as e:
-        print(f"❌ Failed to write pain‑points file: {e}")
+        print(f"❌ Failed to write insights file: {e}")
 
     # ------------------------------------------------------------------
     # Generate blog posts
     # ------------------------------------------------------------------
     posts: list[str] = []
-    for idx, point in enumerate(pain_points, start=1):
+    for idx, insight in enumerate(insights, start=1):
         try:
             if os.getenv("PYTEST_CURRENT_TEST"):
                 # Generate a simple dummy markdown for testing
-                post_md = f"# {point}\\n\\nDummy content for testing."
+                post_md = f"# {insight}\n\nDummy content for testing."
             else:
-                post_md = await generate_blog_post(args.topic, point, verbose=args.verbose)
+                print(f"********** generating blog post with the insight: {insight}")
+                post_md = await generate_blog_post(args.topic, insight, verbose=args.verbose)
 
             # Determine a title for the article
-            title_match = re.search(r"^#{1,2}\\s+(.+)$", post_md, flags=re.MULTILINE)
+            title_match = re.search(r"^#{1,2}\s+(.+)$", post_md, flags=re.MULTILINE)
             if title_match:
                 title = title_match.group(1).strip()
             else:
-                # Fallback to the pain point itself
-                title = point
+                # Fallback to the insight itself
+                title = insight
 
             # Write individual markdown file
             posts_dir = Path("posts")
@@ -262,9 +391,9 @@ async def main_cli() -> None:
             except Exception as e:
                 print(f"❌ Failed to write blog post file '{filename}': {e}")
 
-            posts.append(f"## {idx}. {point}\\n\\n{post_md}\\n")
+            posts.append(f"## {idx}. {insight}\n\n{post_md}\n")
         except Exception as e:
-            print(f"⚠️ Skipping point due to error: {e}")
+            print(f"⚠️ Skipping insight due to error: {e}")
 
     if not posts:
         print("⚠️ No blog posts were successfully generated.")

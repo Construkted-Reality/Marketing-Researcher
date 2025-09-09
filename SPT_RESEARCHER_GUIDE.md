@@ -1,9 +1,9 @@
-# SPT Researcher – Pain‑Point & Blog‑Post Generator
+# SPT Researcher – Insights & Blog‑Post Generator
 
 `spt_researcher.py` is a helper utility built on **GPT‑Researcher** that automates the first two stages of a content‑marketing workflow:
 
-1. **Pain‑point discovery** – Given a broad topic, the script asks GPT‑Researcher to list 10‑20 real‑world problems users experience.
-2. **Blog‑post drafting** – For each pain‑point, the script generates a concise markdown blog‑post outline.
+1. **Insight discovery** – Given a broad topic, the script asks GPT‑Researcher to list 10‑20 actionable insights and content topics.
+2. **Blog‑post drafting** – For each insight, the script generates a concise markdown blog‑post outline.
 
 ## Prerequisites
 
@@ -45,7 +45,8 @@ python spt_researcher.py --topic "<broad topic>" [options]
 | Flag | Description |
 |------|-------------|
 | `--output <path>` | Destination markdown file (default: `generated_blog_posts.md`). |
-| `--max-points <int>` | Upper bound for the number of pain‑points to generate (default: `15`). |
+| `--max-insights <int>` | Upper bound for the number of insights to generate (default: `15`). |
+| `--insights-output <path>` | Path to markdown file that will contain the initial insight list (default: `insights.md`). |
 | `--verbose` | Enable detailed progress logging. |
 | `-h, --help` | Show help message. |
 
@@ -55,26 +56,28 @@ python spt_researcher.py --topic "<broad topic>" [options]
 python spt_researcher.py \
     --topic "remote work productivity" \
     --output remote_posts.md \
-    --max-points 12 \
+    --max-insights 12 \
     --verbose
 ```
 
 The script will:
 
 1. Print progress messages (if `--verbose` is set).
-2. Create `remote_posts.md` containing a top‑level heading, followed by numbered sections—each section starts with the pain‑point title and includes the generated blog‑post markdown.
+2. Create `remote_posts.md` containing a top‑level heading, followed by numbered sections—each section starts with the insight title and includes the generated blog‑post markdown.
+3. Create `insights.md` with debug information showing the generated insights list.
+4. Create individual blog post files in the `posts/` directory.
 
 ## Output format
 
 ```markdown
 # Blog Posts for Topic: remote work productivity
 
-## 1. Pain point #1
+## 1. Insight #1
 <markdown blog post>
 
 ---
 
-## 2. Pain point #2
+## 2. Insight #2
 <markdown blog post>
 
 ...
@@ -83,12 +86,12 @@ The script will:
 ## Troubleshooting
 
 - **Missing environment variables** – The script aborts with a clear error if `OPENAI_API_BASE` or `OPENAI_MODEL_NAME` is not set.
-- **GPT‑Researcher failures** – Errors from the underlying library are caught and reported; the script will continue with the next pain‑point.
+- **GPT‑Researcher failures** – Errors from the underlying library are caught and reported; the script will continue with the next insight.
 - **No output generated** – Ensure the `.env` file points to a reachable vLLM server and that the required API keys are valid.
 
 ## Extending the script
 
-- **Custom prompts** – Modify the `prompt` strings inside `get_pain_points` or `generate_blog_post` to change the style or depth of the output.
+- **Custom prompts** – Modify the `prompt` strings inside `get_insights` or `generate_blog_post` to change the style or depth of the output.
 - **Different output formats** – Replace the markdown writer with a Jinja2 template to produce HTML, PDF, etc.
 
 ---

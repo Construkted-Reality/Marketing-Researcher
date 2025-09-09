@@ -24,7 +24,7 @@ def test_spt_researcher_runs(tmp_path: Path):
         "sample topic for testing",
         "--output",
         str(output_file),
-        "--max-points",
+        "--max-insights",
         "5",
         "--verbose",
     ]
