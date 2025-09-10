@@ -2,13 +2,8 @@
 
 `spt_researcher.py` is a helper utility built on **GPT‑Researcher** that automates the first two stages of a content‑marketing workflow:
 
-<<<<<<< HEAD
-1. **Insight discovery** – Given a broad topic, the script asks GPT‑Researcher to list 10‑20 actionable insights and content topics.
-2. **Blog‑post drafting** – For each insight, the script generates a concise markdown blog‑post outline.
-=======
 1. **Pain‑point discovery** – Given a broad topic, the script uses a JSON-only schema to generate structured, clean pain points.
 2. **Blog‑post drafting** – For each pain‑point, the script generates a concise markdown blog‑post outline.
->>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
 ## Key Features
 
@@ -57,15 +52,10 @@ python spt_researcher.py --topic "<broad topic>" [options]
 | Flag | Description |
 |------|-------------|
 | `--output <path>` | Destination markdown file (default: `generated_blog_posts.md`). |
-<<<<<<< HEAD
-| `--max-insights <int>` | Upper bound for the number of insights to generate (default: `15`). |
-| `--insights-output <path>` | Path to markdown file that will contain the initial insight list (default: `insights.md`). |
-=======
 | `--max-points <int>` | Upper bound for the number of pain‑points to generate (default: `15`). |
 | `--pain-points-output <path>` | **Canonical JSON dump** of step-1 output (default: `pain_points.json`). |
 | `--pain-points-input <path>` | Load existing JSON dump and skip step-1 generation. |
 | `--pain-points-markdown <path>` | Optional human-readable markdown list (non-canonical). |
->>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 | `--verbose` | Enable detailed progress logging. |
 | `-h, --help` | Show help message. |
 
@@ -75,7 +65,7 @@ python spt_researcher.py --topic "<broad topic>" [options]
 python spt_researcher.py \
     --topic "remote work productivity" \
     --output remote_posts.md \
-    --max-insights 12 \
+    --max-points 12 \
     --verbose
 ```
 
@@ -86,14 +76,7 @@ This will:
 4. Create individual post files in `posts/` directory
 5. Create combined markdown in `remote_posts.md`
 
-<<<<<<< HEAD
-1. Print progress messages (if `--verbose` is set).
-2. Create `remote_posts.md` containing a top‑level heading, followed by numbered sections—each section starts with the insight title and includes the generated blog‑post markdown.
-3. Create `insights.md` with debug information showing the generated insights list.
-4. Create individual blog post files in the `posts/` directory.
-=======
 ### Advanced Examples
->>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
 **Troubleshooting workflow** (inspect step-1 output):
 ```bash
@@ -145,23 +128,13 @@ Each pain point generates a separate markdown file:
 ```markdown
 # Blog Posts for Topic: photogrammetry
 
-<<<<<<< HEAD
-## 1. Insight #1
-<markdown blog post>
-=======
 ## 1. Reflective surfaces break feature matching in reconstruction
 <markdown blog post content>
->>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
 ---------
 
-<<<<<<< HEAD
-## 2. Insight #2
-<markdown blog post>
-=======
 ## 2. Insufficient overlap causes incomplete scene coverage
 <markdown blog post content>
->>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
 ...
 ```
@@ -217,10 +190,6 @@ jq '.pain_points[]' pain_points.json | grep -E "(Source|Title|Try again)"
 
 **Environment Issues**:
 - **Missing environment variables** – The script aborts with a clear error if `OPENAI_API_BASE` or `OPENAI_MODEL_NAME` is not set.
-<<<<<<< HEAD
-- **GPT‑Researcher failures** – Errors from the underlying library are caught and reported; the script will continue with the next insight.
-=======
->>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 - **No output generated** – Ensure the `.env` file points to a reachable vLLM server and that the required API keys are valid.
 
 **Step-2 Generation Problems**:
@@ -261,10 +230,6 @@ python spt_researcher.py \
 
 ## Extending the script
 
-<<<<<<< HEAD
-- **Custom prompts** – Modify the `prompt` strings inside `get_insights` or `generate_blog_post` to change the style or depth of the output.
-- **Different output formats** – Replace the markdown writer with a Jinja2 template to produce HTML, PDF, etc.
-=======
 - **Custom prompts** – Modify the JSON schema and rules in `get_pain_points` to change output style
 - **Parser improvements** – Enhance `parse_pain_points` noise patterns for better filtering
 - **Different output formats** – Replace the markdown writer with templates for HTML, PDF, etc.
@@ -283,7 +248,6 @@ pipenv run pytest test_spt_researcher.py::test_pain_points_input_override -v
 # Test parsing functions
 pipenv run pytest test_spt_researcher.py::test_json_parsing_functions -v
 ```
->>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
 ---
 
