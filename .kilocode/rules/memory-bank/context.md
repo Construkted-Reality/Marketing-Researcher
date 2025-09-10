@@ -98,6 +98,26 @@ The script eliminates web scraping artifacts like "Source:", "Try again", "Pleas
 - Word counts provide approximation without requiring token-level APIs
 - Maintains backward compatibility with existing functionality
 
+**Large Context Window Optimization (September 10, 2025)**: Configured the system to take full advantage of large-context LLMs by increasing data throughput at multiple pipeline stages.
+
+**Configuration Changes**:
+- **Enhanced Scraping**: Changed SCRAPER from 'bs' to 'tavily_extract' for fuller, cleaner article extraction
+- **Increased Browse Limits**: Set BROWSE_CHUNK_MAX_LENGTH=32768 (4x increase from default 8192)
+- **Higher Token Limits**: Set FAST_TOKEN_LIMIT=128000 and SMART_TOKEN_LIMIT=128000 for large context models
+- **More Search Results**: Enabled MAX_SEARCH_RESULTS_PER_QUERY=25 and MAX_ITERATIONS=4 for broader research coverage
+
+**Code Changes (spt_researcher.py)**:
+- **Insight Extraction**: Increased truncation limit from 20k to 80k characters, max_tokens from 2000 to 6000
+- **Title Extraction**: Increased truncation limit from 10k to 40k characters, max_tokens from 100 to 400
+- **Large Context Support**: All local extraction steps now leverage the full context window capacity
+
+**Benefits**:
+- 4x more scraped content preserved through the pipeline
+- Higher quality source material via tavily_extract
+- Deeper research with more web sources and iterations
+- Local extraction steps can process much larger contexts
+- Better utilization of large-context LLM capabilities
+
 ## Active Configuration
 - **vLLM Server**: 192.168.8.90:42069 (gpt-oss-120b model)
 - **Ollama Server**: 192.168.8.90:11434 (mxbai-embed-large model)

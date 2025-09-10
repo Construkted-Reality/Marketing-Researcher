@@ -227,8 +227,8 @@ async def extract_insights_from_raw(
         base_url=os.getenv("OPENAI_API_BASE")
     )
     
-    # Limit raw text to avoid token limits (keep first ~20k chars)
-    truncated_raw = raw_text[:20000] if len(raw_text) > 20000 else raw_text
+    # Limit raw text to avoid token limits (keep first ~80k chars for large context models)
+    truncated_raw = raw_text[:80000] if len(raw_text) > 80000 else raw_text
     
     extraction_prompt = f"""You are a content marketing analyst. Extract {max_insights} specific, actionable insights from the research below for the topic "{topic}".
 
@@ -252,7 +252,7 @@ Research to analyze:
                 {"role": "user", "content": extraction_prompt}
             ],
             temperature=0.7,
-            max_tokens=2000
+            max_tokens=10000
         )
         
         json_output = response.choices[0].message.content
@@ -327,8 +327,8 @@ async def extract_title_from_blog_post(
         base_url=os.getenv("OPENAI_API_BASE")
     )
     
-    # Limit blog post to avoid token limits (keep first ~10k chars)
-    truncated_post = blog_post_md[:10000] if len(blog_post_md) > 10000 else blog_post_md
+    # Limit blog post to avoid token limits (keep first ~40k chars for large context models)
+    truncated_post = blog_post_md[:40000] if len(blog_post_md) > 40000 else blog_post_md
     
     extraction_prompt = f"""Extract the main title from this blog post markdown content. Return ONLY the title text without any markdown formatting (no # symbols), quotes, or additional text.
 
@@ -349,7 +349,7 @@ Blog post content:
                 {"role": "user", "content": extraction_prompt}
             ],
             temperature=0.3,
-            max_tokens=100
+            max_tokens=5000
         )
         
         title_output = response.choices[0].message.content
