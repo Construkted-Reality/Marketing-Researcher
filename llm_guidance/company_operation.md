@@ -12,12 +12,23 @@ Construkted Reality is an open-access, web-based platform that democratizes 3D d
 **Assets Management**
 - Manage foundational, un-modified 3D data files with rich metadata (geo-location, capture date, description, etc.)
 - Rich metadata search and filter capabilities
+- File types and formats which Construkted Reality accepts and can display
+  - Polygon mesh
+    - OBJ, GLB, IFC  
+  - Tiled Models
+    - Cesium Format
+  - Point Clouds
+    - las and laz
+  - Ortho
+    - GeoTIFF
 
 **Collaborative Workspaces (Projects)**
 - Create collaborative workspaces where teams can layer multiple Assets
 - Add annotations, measurements, and communication without altering original files
-- Craft stories through presentations around 3D data and annotations
-- **Storytelling & Presentation layer:** craft narratives and presentations around 3D data and annotations
+  - Annotation types availble
+    - Note, Polyline, Polygon, Place image
+  - Measurement types available
+    - Point information (coordinates, slope), distance, area, volume
 - Real-time collaborative editing environment
 
 **Community Features**
@@ -43,7 +54,8 @@ Construkted Reality is an open-access, web-based platform that democratizes 3D d
 
 **Current Monetization Streams**
 - Tiered subscriptions (Hobbyist/Pro/Enterprise)
-- Storage fees
+  - Storage fees
+  - Access to more advanced features
 
 **Future Planned Monetization Streams**
 - Marketplace for asset sales (with commission and subscription access)
@@ -64,6 +76,7 @@ Construkted Reality is an open-access, web-based platform that democratizes 3D d
 - No offline desktop application – fully web‑based access only
 - No native 3D modeling or editing tools (focuses on management and collaboration)
 - No API access for advanced integrations (planned for future releases)
+- Not a photogrammetry pipeline. It cannot process images and generate 3d models.
 
 ### Functional Restrictions
 - Does not alter or modify original 3D assets during collaboration

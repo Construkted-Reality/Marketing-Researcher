@@ -72,6 +72,32 @@ Search configuration clarification:
 The script eliminates web scraping artifacts like "Source:", "Try again", "Please enable Javascript" through robust parsing and produces clean, structured pain points for reliable step-2 processing.
 >>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
 
+**SPT Researcher Cost Tracking Implementation (September 10, 2025)**: Successfully implemented word-based cost tracking for all generated content with per-step breakdown and cost summaries.
+
+**Cost Tracking Features**:
+- **Word-Based Approximations**: Uses simple whitespace splitting to count prompt_words and completion_words for both insights and blog post generation
+- **Cost Delta Capture**: Leverages GPT Researcher's built-in `researcher.get_costs()` method to track subtotal_usd for each research step
+- **Per-Step Breakdown**: Captures costs separately for initial research step and individual blog post generation
+- **Markdown Integration**: Automatically appends Cost Summary sections to both insights.md and individual post files under posts/
+
+**Implementation Details**:
+- Added `count_words()` helper function for consistent word counting across the system
+- Modified `get_insights()` to return cost data: (insights, prompt, raw_output, json, prompt_words, completion_words, research_subtotal_usd)
+- Modified `generate_blog_post()` to return cost data: (blog_post, prompt_words, completion_words, subtotal_usd)
+- Updated function signatures and callers to handle new tuple return types
+- Resolved type annotation conflicts that caused linting errors
+
+**Output Format**:
+- **Insights file** includes: "Cost Summary" section with initial research step metrics
+- **Individual blog posts** include: appended Cost Summary with per-post generation metrics
+- **Cost format**: prompt_words, completion_words, subtotal_usd (formatted to 4 decimal places)
+
+**Technical Approach**:
+- Uses GPT Researcher's cost tracking exclusively (no internal rate calculations)
+- Captures cost deltas around specific operations (conduct_research, write_report)
+- Word counts provide approximation without requiring token-level APIs
+- Maintains backward compatibility with existing functionality
+
 ## Active Configuration
 - **vLLM Server**: 192.168.8.90:42069 (gpt-oss-120b model)
 - **Ollama Server**: 192.168.8.90:11434 (mxbai-embed-large model)

@@ -2,3 +2,5 @@
 ✅ - Then for each iteration in the second step, write a separate file out for each research job.
    - SEO optimizations?
    - tune prompt for the 'extract_insights_from_raw' function foe better insight extraction
+   - secifically tell the prompt that CR does not ingest images, as it's not a photogrammetry software. The only images it can ingest are Geo-Tiff images
+   

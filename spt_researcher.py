@@ -132,10 +132,24 @@ def slugify(text: str) -> str:
     slug = slug.strip("_")
     return slug
 
+def count_words(text: str) -> int:
+    """
+    Count words in text using simple whitespace splitting.
+    
+    Args:
+        text: Input text to count words in
+        
+    Returns:
+        Number of words (approximate)
+    """
+    if not text or not isinstance(text, str):
+        return 0
+    return len(text.split())
+
 # ----------------------------------------------------------------------
 # Helper – Generate insights
 # ----------------------------------------------------------------------
-async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[str], str, str, str]:
+async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[str], str, str, str, int, int, float]:
     """
     Use GPTResearcher to gather raw research, then extract insights using local LLM.
 
@@ -145,7 +159,7 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
         verbose: If True, prints progress information.
 
     Returns:
-        Tuple of (insight_list, prompt_used, raw_output, extraction_json).
+        Tuple of (insight_list, prompt_used, raw_output, extraction_json, prompt_words, completion_words, research_subtotal_usd).
     """
 
     company_operation_content = read_file(COMPANY_OPERATION_FILE)
@@ -154,7 +168,7 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
     prompt = load_prompt_template(
         "insight_prompt_guidance",
         company_operation_content=company_operation_content,
-        content_marketing_guidance_content=content_marketing_guidance_content, 
+        content_marketing_guidance_content=content_marketing_guidance_content,
         max_insights=max_insights,
         topic=topic
     )
@@ -162,20 +176,30 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
     if verbose:
         print("🔎 Generating insights…")
     researcher = GPTResearcher(
-        query=prompt, 
+        query=prompt,
         verbose=verbose
     )
     try:
+        # Capture cost before research
+        start_cost = researcher.get_costs()
+        
         # Stage 1: Get raw research from GPT-Researcher
         raw = await researcher.conduct_research()
         raw_text = str(raw)
+        
+        # Capture cost after research to get research subtotal
+        research_subtotal_usd = researcher.get_costs() - start_cost
+        
+        # Calculate word counts for approximation
+        prompt_words = count_words(prompt)
+        completion_words = count_words(raw_text)
         
         # Stage 2: Extract clean insights using local LLM
         insights, extraction_json = await extract_insights_from_raw(
             raw_text, topic, max_insights, verbose
         )
         
-        return insights, prompt, raw_text, extraction_json
+        return insights, prompt, raw_text, extraction_json, prompt_words, completion_words, research_subtotal_usd
     except Exception as exc:
         raise RuntimeError(f"Failed to generate insights: {exc}") from exc
 
@@ -356,7 +380,7 @@ Blog post content:
 # ----------------------------------------------------------------------
 async def generate_blog_post(
     topic: str, insight: str, verbose: bool = False
-) -> str:
+) -> tuple[str, int, int, float]:
     """
     Generate a markdown‑formatted blog post (outline/draft) for a given insight.
 
@@ -401,16 +425,27 @@ async def generate_blog_post(
     if verbose:
         print(f"🖋️ Generating blog post for: {insight[:60]}…")
     researcher = GPTResearcher(
-        query=prompt, 
-       # tone="conversational and engaging", 
-        report_type="content marketing blog post",
+        query=prompt,
+       # tone="conversational and engaging",
+        report_type="research_report",
         verbose=verbose
     )
     try:
-        # `write_report` produces the final formatted output.
+        # Capture cost before research
+        start_cost = researcher.get_costs()
+        
+        # Conduct research and write report
         await researcher.conduct_research()
         report = await researcher.write_report()
-        return str(report)
+        
+        # Capture cost after generation to get subtotal
+        subtotal_usd = researcher.get_costs() - start_cost
+        
+        # Calculate word counts for approximation
+        prompt_words = count_words(prompt)
+        completion_words = count_words(str(report))
+        
+        return str(report), prompt_words, completion_words, subtotal_usd
     except Exception as exc:
         raise RuntimeError(
             f"Failed to generate blog post for '{insight}': {exc}"
@@ -484,8 +519,11 @@ async def main_cli() -> None:
             prompt_used = f"Dummy prompt for topic '{args.topic}'"
             raw_output = "Dummy raw output for testing"
             extraction_json = '["Dummy insight 1", "Dummy insight 2"]'
+            research_prompt_words = count_words(prompt_used)
+            research_completion_words = count_words(raw_output)
+            research_subtotal_usd = 0.0
         else:
-            insights, prompt_used, raw_output, extraction_json = await get_insights(
+            insights, prompt_used, raw_output, extraction_json, research_prompt_words, research_completion_words, research_subtotal_usd = await get_insights(
                 args.topic, args.max_insights, verbose=args.verbose
             )
     except Exception as e:
@@ -530,6 +568,14 @@ async def main_cli() -> None:
             for idx, insight in enumerate(insights, start=1):
                 f.write(f"{idx}. {insight}\n")
             f.write("\n")
+            
+            # Add cost summary for initial research step
+            f.write("## Cost Summary\n\n")
+            f.write(f"**Initial Research Step:**\n")
+            f.write(f"- prompt_words: {research_prompt_words}\n")
+            f.write(f"- completion_words: {research_completion_words}\n")
+            f.write(f"- subtotal_usd: ${research_subtotal_usd:.4f}\n")
+            f.write("\n")
         
         if args.verbose:
             print(f"✅ Insights debug information appended to {insights_path.resolve()}")
@@ -554,9 +600,12 @@ async def main_cli() -> None:
             if os.getenv("PYTEST_CURRENT_TEST"):
                 # Generate a simple dummy markdown for testing
                 post_md = f"# {insight}\n\nDummy content for testing."
+                post_prompt_words = count_words(f"Generate blog post for: {insight}")
+                post_completion_words = count_words(post_md)
+                post_subtotal_usd = 0.0
             else:
                 print(f"********** generating blog post with the insight: {insight}")
-                post_md = await generate_blog_post(args.topic, insight, verbose=args.verbose)
+                post_md, post_prompt_words, post_completion_words, post_subtotal_usd = await generate_blog_post(args.topic, insight, verbose=args.verbose)
 
             # Extract title using LLM instead of regex matching
             if os.getenv("PYTEST_CURRENT_TEST"):
@@ -565,7 +614,7 @@ async def main_cli() -> None:
             else:
                 title = await extract_title_from_blog_post(post_md, insight, verbose=args.verbose)
 
-            # Write individual markdown file
+            # Write individual markdown file with cost summary
             posts_dir = Path("posts")
             posts_dir.mkdir(parents=True, exist_ok=True)
             filename = slugify(title) + ".md"
@@ -573,6 +622,11 @@ async def main_cli() -> None:
             try:
                 with file_path.open("w", encoding="utf-8") as f:
                     f.write(post_md)
+                    f.write("\n\n---\n\n")
+                    f.write("## Cost Summary\n\n")
+                    f.write(f"- prompt_words: {post_prompt_words}\n")
+                    f.write(f"- completion_words: {post_completion_words}\n")
+                    f.write(f"- subtotal_usd: ${post_subtotal_usd:.4f}\n")
                 if args.verbose:
                     print(f"✅ Blog post written to {file_path.resolve()}")
             except Exception as e:
