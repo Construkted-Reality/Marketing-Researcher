@@ -228,17 +228,15 @@ async def extract_insights_from_raw(
     )
     
     # Limit raw text to avoid token limits (keep first ~80k chars for large context models)
-    truncated_raw = raw_text[:80000] if len(raw_text) > 80000 else raw_text
+    #truncated_raw = raw_text[:80000] if len(raw_text) > 80000 else raw_text
+    truncated_raw = raw_text
     
-    extraction_prompt = f"""You are a content marketing analyst. Extract {max_insights} specific, actionable insights from the research below for the topic "{topic}".
-
-Return ONLY a valid JSON array of strings, with no additional text or formatting. Each insight should be a short, actionable statement that content creators can use.
-
-Example format:
-["First insight here", "Second insight here", "Third insight here"]
-
-Research to analyze:
-{truncated_raw}"""
+    extraction_prompt = load_prompt_template(
+        "extract_insight_prompt",
+        max_insights=max_insights,
+        topic=topic,
+        truncated_raw=truncated_raw,
+    )
 
     if verbose:
         print("🔍 Extracting insights using local LLM...")
@@ -328,14 +326,14 @@ async def extract_title_from_blog_post(
     )
     
     # Limit blog post to avoid token limits (keep first ~40k chars for large context models)
-    truncated_post = blog_post_md[:40000] if len(blog_post_md) > 40000 else blog_post_md
+    #truncated_post = blog_post_md[:40000] if len(blog_post_md) > 40000 else blog_post_md
+    truncated_post = blog_post_md
     
-    extraction_prompt = f"""Extract the main title from this blog post markdown content. Return ONLY the title text without any markdown formatting (no # symbols), quotes, or additional text.
-
-If there are multiple headings, return the main title that best represents the entire article.
-
-Blog post content:
-{truncated_post}"""
+    extraction_prompt = load_prompt_template(
+        "extract_title_prompt",
+        title_guidance=TITLES_FILE,        
+        truncated_post=truncated_post,
+    )
 
     if verbose:
         print("📝 Extracting title using local LLM...")
