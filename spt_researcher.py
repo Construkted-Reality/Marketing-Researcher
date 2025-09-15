@@ -9,7 +9,7 @@
 #
 # The script:
 #   1. Loads .env variables (API keys, endpoints, etc.).
-#   2. Generates a list of insights via GPT‑Researcher.
+#   2. Generates structured insights via GPT‑Researcher.
 #   3. For each insight, generates a blog‑post draft.
 #   4. Writes the combined markdown to the output file.
 # --------------------------------------------------------------
@@ -19,6 +19,7 @@ import asyncio
 import json
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 import re
 from datetime import datetime
@@ -26,6 +27,19 @@ from typing import Dict, Any, Optional, List, Tuple
 from dotenv import load_dotenv
 from gpt_researcher import GPTResearcher
 from openai import OpenAI
+
+
+@dataclass
+class InsightObject:
+    """Data class representing a structured insight with context and metadata."""
+    insight: str = ""
+    context: str = ""
+    source_reference: str = ""
+    key_data: str = ""
+    priority_level: str = "medium"
+    content_type: str = "general"
+    target_audience: str = "general"
+
 
 CONTEXT_FILE = Path("llm_guidance/context.md")
 TITLES_FILE = Path("llm_guidance/crafting_compelling_titles.md")
@@ -149,9 +163,9 @@ def count_words(text: str) -> int:
 # ----------------------------------------------------------------------
 # Helper – Generate insights
 # ----------------------------------------------------------------------
-async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[str], str, str, str, int, int, float]:
+async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[InsightObject], str, str, str, int, int, float]:
     """
-    Use GPTResearcher to gather raw research, then extract insights using local LLM.
+    Use GPTResearcher to gather raw research, then extract structured insights using local LLM.
 
     Args:
         topic: The broad subject (e.g., "remote work productivity").
@@ -159,7 +173,7 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
         verbose: If True, prints progress information.
 
     Returns:
-        Tuple of (insight_list, prompt_used, raw_output, extraction_json, prompt_words, completion_words, research_subtotal_usd).
+        Tuple of (insight_objects, prompt_used, raw_output, extraction_json, prompt_words, completion_words, research_subtotal_usd).
     """
 
     company_operation_content = read_file(COMPANY_OPERATION_FILE)
@@ -208,9 +222,9 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
 # ----------------------------------------------------------------------
 async def extract_insights_from_raw(
     raw_text: str, topic: str, max_insights: int, verbose: bool = False
-) -> tuple[list[str], str]:
+) -> tuple[list[InsightObject], str]:
     """
-    Extract clean insights from raw GPT-Researcher output using local vLLM.
+    Extract structured insights from raw GPT-Researcher output using local vLLM.
     
     Args:
         raw_text: Raw research output from GPT-Researcher
@@ -219,7 +233,7 @@ async def extract_insights_from_raw(
         verbose: If True, prints progress information
         
     Returns:
-        Tuple of (insights_list, extraction_json_output)
+        Tuple of (insight_objects, extraction_json_output)
     """
     # Create OpenAI client using the configured vLLM endpoint
     client = OpenAI(
@@ -377,28 +391,19 @@ async def extract_title_from_blog_post(
 # Helper – Generate a blog post draft for a single insight
 # ----------------------------------------------------------------------
 async def generate_blog_post(
-    topic: str, insight: str, verbose: bool = False
+    topic: str, insight_obj: InsightObject, verbose: bool = False
 ) -> tuple[str, int, int, float]:
     """
-    Generate a markdown‑formatted blog post (outline/draft) for a given insight.
+    Generate a markdown‑formatted blog post (outline/draft) for a given structured insight.
 
     Args:
         topic: The overarching topic supplied by the user.
-        insight: One of the insights returned by `get_insights`.
+        insight_obj: Structured insight object containing context, data, and metadata.
         verbose: If True, prints progress information.
 
     Returns:
         Markdown string containing the blog post.
     """
- #   prompt = (
- #       f"Write a concise, well‑structured blog post (in markdown) that "
- #       f"explores the following insight:\n\n"
- #       f"**Insight:** {insight}\n\n"
- #       f"The post should be framed within the broader topic '{topic}'. "
- #       f"Include an engaging introduction, 2‑3 sub‑sections with headings, "
- #       f"and a short conclusion. Use bullet points where appropriate and "
- #       f"maintain a professional tone suitable for a content‑marketing audience."
- #   )
 
     company_operation_content = read_file(COMPANY_OPERATION_FILE)
     content_marketing_guidance_content = read_file(CONTENT_MARKETING_GUIDANCE_FILE)
@@ -407,25 +412,30 @@ async def generate_blog_post(
     prompt = load_prompt_template(
         "create_blog-post_prompt_guidance",
         company_operation_content=company_operation_content,
-        content_marketing_guidance_content=content_marketing_guidance_content,        
+        content_marketing_guidance_content=content_marketing_guidance_content,
         voice_new_yorker=VOICE_DEFINITIONS["TheNewYorker"],
         voice_atlantic=VOICE_DEFINITIONS["TheAtlantic"],
         voice_wired=VOICE_DEFINITIONS["Wired"],
         titles_content=titles_content,
-        insight=insight,
-        topic=topic,        
-        formatting_rules=FORMATTING_RULES,        
+        insight=insight_obj.insight,
+        context=insight_obj.context,
+        key_data=insight_obj.key_data,
+        source_reference=insight_obj.source_reference,
+        priority_level=insight_obj.priority_level,
+        content_type=insight_obj.content_type,
+        target_audience=insight_obj.target_audience,
+        topic=topic,
+        formatting_rules=FORMATTING_RULES,
     )
 
     # Please use one of the following: research_report, resource_report, outline_report, custom_report, subtopic_report, deep
     # Probably best to use either 'deep' or 'custom_report'
     
     if verbose:
-        print(f"🖋️ Generating blog post for: {insight[:60]}…")
+        print(f"🖋️ Generating blog post for: {insight_obj.insight[:60]}…")
     researcher = GPTResearcher(
         query=prompt,
-       # tone="conversational and engaging",
-        report_type="research_report",
+        report_type="deep",
         verbose=verbose
     )
     try:
@@ -446,7 +456,7 @@ async def generate_blog_post(
         return str(report), prompt_words, completion_words, subtotal_usd
     except Exception as exc:
         raise RuntimeError(
-            f"Failed to generate blog post for '{insight}': {exc}"
+            f"Failed to generate blog post for '{insight_obj.insight}': {exc}"
         ) from exc
 
 # ----------------------------------------------------------------------
@@ -496,11 +506,11 @@ async def main_cli() -> None:
         load_environment()
         
         # Debug: Verify temperature settings are loaded from .env
-        print(f"🔧 [DEBUG] Temperature settings loaded from .env:")
-        print(f"   TEMPERATURE: {os.getenv('TEMPERATURE', 'not set')}")
-        print(f"   FAST_TEMPERATURE: {os.getenv('FAST_TEMPERATURE', 'not set')}")
-        print(f"   SMART_TEMPERATURE: {os.getenv('SMART_TEMPERATURE', 'not set')}")
-        print(f"   STRATEGIC_TEMPERATURE: {os.getenv('STRATEGIC_TEMPERATURE', 'not set')}")
+    #    print(f"🔧 [DEBUG] Temperature settings loaded from .env:")
+    #    print(f"   TEMPERATURE: {os.getenv('TEMPERATURE', 'not set')}")
+    #    print(f"   FAST_TEMPERATURE: {os.getenv('FAST_TEMPERATURE', 'not set')}")
+    #    print(f"   SMART_TEMPERATURE: {os.getenv('SMART_TEMPERATURE', 'not set')}")
+    #    print(f"   STRATEGIC_TEMPERATURE: {os.getenv('STRATEGIC_TEMPERATURE', 'not set')}")
         print()
         
     except Exception as e:
@@ -513,10 +523,21 @@ async def main_cli() -> None:
     try:
         # If running under pytest, use dummy data to avoid long LLM calls
         if os.getenv("PYTEST_CURRENT_TEST"):
-            insights = [f"Dummy insight {i+1}" for i in range(min(args.max_insights, 5))]
+            # Create structured dummy insights
+            insights = [
+                InsightObject(
+                    insight=f"Dummy insight {i+1}",
+                    context="This is a dummy context for testing purposes",
+                    source_reference="https://example.com/dummy",
+                    key_data="Dummy data: 100%",
+                    priority_level="medium",
+                    content_type="general",
+                    target_audience="general"
+                ) for i in range(min(args.max_insights, 5))
+            ]
             prompt_used = f"Dummy prompt for topic '{args.topic}'"
             raw_output = "Dummy raw output for testing"
-            extraction_json = '["Dummy insight 1", "Dummy insight 2"]'
+            extraction_json = '[{"insight": "Dummy insight 1", "context": "Dummy context", "source_reference": "https://example.com/dummy", "key_data": "Dummy data", "priority_level": "medium", "content_type": "general", "target_audience": "general"}]'
             research_prompt_words = count_words(prompt_used)
             research_completion_words = count_words(raw_output)
             research_subtotal_usd = 0.0
@@ -533,7 +554,7 @@ async def main_cli() -> None:
         sys.exit(0)
 
     if args.verbose:
-        print(f"✅ Retrieved {len(insights)} insights.\n")
+        print(f"✅ Retrieved {len(insights)} structured insights.\n")
 
     # ------------------------------------------------------------------
     # Write insights to separate markdown file with debug information
@@ -563,8 +584,15 @@ async def main_cli() -> None:
             f.write(f"```json\n{extraction_json}\n```\n\n")
             
             f.write("## Parsed Insights\n\n")
-            for idx, insight in enumerate(insights, start=1):
-                f.write(f"{idx}. {insight}\n")
+            for idx, insight_obj in enumerate(insights, start=1):
+                f.write(f"## Insight #{idx}\n")
+                f.write(f"**Insight:** {insight_obj.insight}\n\n")
+                f.write(f"**Context:** {insight_obj.context}\n\n")
+                f.write(f"**Source Reference:** {insight_obj.source_reference}\n\n")
+                f.write(f"**Key Data:** {insight_obj.key_data}\n\n")
+                f.write(f"**Priority Level:** {insight_obj.priority_level}\n\n")
+                f.write(f"**Content Type:** {insight_obj.content_type}\n\n")
+                f.write(f"**Target Audience:** {insight_obj.target_audience}\n\n")
             f.write("\n")
             
             # Add cost summary for initial research step
@@ -593,24 +621,24 @@ async def main_cli() -> None:
     # Generate blog posts
     # ------------------------------------------------------------------
     posts: list[str] = []
-    for idx, insight in enumerate(insights, start=1):
+    for idx, insight_obj in enumerate(insights, start=1):
         try:
             if os.getenv("PYTEST_CURRENT_TEST"):
                 # Generate a simple dummy markdown for testing
-                post_md = f"# {insight}\n\nDummy content for testing."
-                post_prompt_words = count_words(f"Generate blog post for: {insight}")
+                post_md = f"# {insight_obj.insight}\n\nDummy content for testing."
+                post_prompt_words = count_words(f"Generate blog post for: {insight_obj.insight}")
                 post_completion_words = count_words(post_md)
                 post_subtotal_usd = 0.0
             else:
-                print(f"********** generating blog post with the insight: {insight}")
-                post_md, post_prompt_words, post_completion_words, post_subtotal_usd = await generate_blog_post(args.topic, insight, verbose=args.verbose)
+                #print(f"********** generating blog post with the insight: {insight_obj.insight}")
+                post_md, post_prompt_words, post_completion_words, post_subtotal_usd = await generate_blog_post(args.topic, insight_obj, verbose=args.verbose)
 
             # Extract title using LLM instead of regex matching
             if os.getenv("PYTEST_CURRENT_TEST"):
                 # Use simple title for testing
-                title = insight
+                title = insight_obj.insight
             else:
-                title = await extract_title_from_blog_post(post_md, insight, verbose=args.verbose)
+                title = await extract_title_from_blog_post(post_md, insight_obj.insight, verbose=args.verbose)
 
             # Write individual markdown file with cost summary
             posts_dir = Path("posts")
@@ -630,7 +658,7 @@ async def main_cli() -> None:
             except Exception as e:
                 print(f"❌ Failed to write blog post file '{filename}': {e}")
 
-            posts.append(f"## {idx}. {insight}\n\n{post_md}\n")
+            posts.append(f"## {idx}. {insight_obj.insight}\n\n{post_md}\n")
         except Exception as e:
             print(f"⚠️ Skipping insight due to error: {e}")
 
