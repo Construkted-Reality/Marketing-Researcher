@@ -5,3 +5,4 @@
 ✅ - secifically tell the prompt that CR does not ingest images, as it's not a photogrammetry software. The only images it can ingest are Geo-Tiff images
    - Ask the AI agent to generate a score on how good the article is. How relevant it is, or how much of the information came from the sources and how much came from its own memory?
    This info is for me to asses how good an article is
+   - the extra info extracted from insights shouldhave multiple source urls if available, not ust one

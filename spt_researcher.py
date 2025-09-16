@@ -82,11 +82,18 @@ FORMATTING_RULES = (
 #CREATE_BLOG_PROMPT_FILE = Path("llm_guidance/create_blog-post_guidance.md")
 
 def load_prompt_template(template_name: str, **kwargs) -> str:
-    """Load a prompt template from the prompts directory and format it with provided variables."""
+    """Load a prompt template from the prompts directory and format it with provided variables.
+    Uses brace-safe formatting to avoid conflicts with JSON braces in templates."""
     template_path = Path("llm_guidance") / f"{template_name}.md"
     try:
         template_content = template_path.read_text(encoding="utf-8")
-        return template_content.format(**kwargs)
+        
+        # Brace-safe formatting: only replace known placeholders
+        for key, value in kwargs.items():
+            placeholder = "{" + key + "}"
+            template_content = template_content.replace(placeholder, str(value))
+        
+        return template_content
     except Exception as e:
         sys.stderr.write(f"Error loading prompt template {template_name}: {e}\n")
         sys.exit(1)
@@ -277,15 +284,34 @@ async def extract_insights_from_raw(
             if verbose:
                 print(f"🔍 JSON extraction output:\n{json_output}\n")
             
-            insights = json.loads(json_output)
-            if isinstance(insights, list) and all(isinstance(item, str) for item in insights):
-                # Limit to max_insights and clean up
-                cleaned_insights = [insight.strip() for insight in insights[:max_insights] if insight.strip()]
-                if verbose:
-                    print(f"✅ Extracted {len(cleaned_insights)} insights from JSON")
-                return cleaned_insights, json_output
-            else:
-                raise ValueError("JSON is not a list of strings")
+            insights_data = json.loads(json_output)
+            if not isinstance(insights_data, list):
+                raise ValueError("JSON is not a list")
+            
+            # Convert to InsightObject instances
+            insight_objects = []
+            for item in insights_data:
+                if isinstance(item, dict):
+                    # Create InsightObject with default values for missing fields
+                    insight_obj = InsightObject(
+                        insight=item.get("insight", ""),
+                        context=item.get("context", ""),
+                        source_reference=item.get("source_reference", ""),
+                        key_data=item.get("key_data", ""),
+                        priority_level=item.get("priority_level", "medium"),
+                        content_type=item.get("content_type", "general"),
+                        target_audience=item.get("target_audience", "general")
+                    )
+                    insight_objects.append(insight_obj)
+                else:
+                    # Handle non-dictionary items (shouldn't happen but safe)
+                    insight_objects.append(InsightObject(insight=str(item)))
+            
+            # Limit to max_insights
+            insight_objects = insight_objects[:max_insights]
+            if verbose:
+                print(f"✅ Extracted {len(insight_objects)} structured insights from JSON")
+            return insight_objects, json_output
         except (json.JSONDecodeError, ValueError) as e:
             if verbose:
                 print(f"⚠️ JSON parsing failed: {e}, falling back to heuristic parsing")
@@ -298,7 +324,17 @@ async def extract_insights_from_raw(
                     # Remove quotes and common prefixes
                     cleaned = line.strip('",').lstrip('-•* ').strip()
                     if cleaned and len(cleaned) > 10:  # Reasonable minimum length
-                        fallback_insights.append(cleaned)
+                        fallback_insights.append(InsightObject(insight=cleaned))
+            
+            # If heuristic parsing also fails, use raw text fallback
+            if not fallback_insights:
+                if verbose:
+                    print("⚠️ Heuristic parsing failed, using raw text fallback")
+                fallback_insights = []
+                for line in raw_text.splitlines():
+                    line = line.strip().lstrip('-•* ').strip()
+                    if line and len(line) > 10 and len(line) < 200:
+                        fallback_insights.append(InsightObject(insight=line))
             
             if verbose:
                 print(f"✅ Heuristic parsing extracted {len(fallback_insights[:max_insights])} insights")
@@ -312,7 +348,7 @@ async def extract_insights_from_raw(
         for line in raw_text.splitlines():
             line = line.strip().lstrip('-•* ').strip()
             if line and len(line) > 10 and len(line) < 200:  # Reasonable insight length
-                fallback_insights.append(line)
+                fallback_insights.append(InsightObject(insight=line))
         
         return fallback_insights[:max_insights], f"Extraction failed: {str(e)}"
 
