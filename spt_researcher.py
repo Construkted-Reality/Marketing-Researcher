@@ -5,7 +5,7 @@
 # --------------------------------------------------------------
 # Usage:
 #   python spt_researcher.py --topic "remote work productivity" \
-#       [--output generated_posts.md] [--max-insights 15] [--verbose] [--insights-only]
+#       [--output generated_posts.md] [--max-insights 15] [--verbose] [--gr-verbose] [--insights-only]
 #
 # The script:
 #   1. Loads .env variables (API keys, endpoints, etc.).
@@ -170,14 +170,15 @@ def count_words(text: str) -> int:
 # ----------------------------------------------------------------------
 # Helper – Generate insights
 # ----------------------------------------------------------------------
-async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> tuple[list[InsightObject], str, str, str, int, int, float]:
+async def get_insights(topic: str, max_insights: int, verbose: bool = False, gr_verbose: bool = False) -> tuple[list[InsightObject], str, str, str, int, int, float]:
     """
     Use GPTResearcher to gather raw research, then extract structured insights using local LLM.
 
     Args:
         topic: The broad subject (e.g., "remote work productivity").
         max_insights: Upper bound of insights to request.
-        verbose: If True, prints progress information.
+        verbose: If True, prints general script progress information.
+        gr_verbose: If True, enables GPT-Researcher verbose output.
 
     Returns:
         Tuple of (insight_objects, prompt_used, raw_output, extraction_json, prompt_words, completion_words, research_subtotal_usd).
@@ -198,7 +199,7 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False) -> 
         print("🔎 Generating insights…")
     researcher = GPTResearcher(
         query=prompt,
-        verbose=verbose
+        verbose=gr_verbose
     )
     try:
         # Capture cost before research
@@ -427,7 +428,7 @@ async def extract_title_from_blog_post(
 # Helper – Generate a blog post draft for a single insight
 # ----------------------------------------------------------------------
 async def generate_blog_post(
-    topic: str, insight_obj: InsightObject, verbose: bool = False
+    topic: str, insight_obj: InsightObject, verbose: bool = False, gr_verbose: bool = False
 ) -> tuple[str, int, int, float]:
     """
     Generate a markdown‑formatted blog post (outline/draft) for a given structured insight.
@@ -435,7 +436,8 @@ async def generate_blog_post(
     Args:
         topic: The overarching topic supplied by the user.
         insight_obj: Structured insight object containing context, data, and metadata.
-        verbose: If True, prints progress information.
+        verbose: If True, prints general script progress information.
+        gr_verbose: If True, enables GPT-Researcher verbose output.
 
     Returns:
         Markdown string containing the blog post.
@@ -472,7 +474,7 @@ async def generate_blog_post(
     researcher = GPTResearcher(
         query=prompt,
         report_type="deep",
-        verbose=verbose
+        verbose=gr_verbose
     )
     try:
         # Capture cost before research
@@ -526,7 +528,12 @@ async def main_cli() -> None:
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Enable detailed progress logging.",
+        help="Enable detailed progress logging for the script.",
+    )
+    parser.add_argument(
+        "--gr-verbose",
+        action="store_true",
+        help="Enable verbose output for GPT-Researcher operations.",
     )
     parser.add_argument(
         "--insights-only",
@@ -579,7 +586,7 @@ async def main_cli() -> None:
             research_subtotal_usd = 0.0
         else:
             insights, prompt_used, raw_output, extraction_json, research_prompt_words, research_completion_words, research_subtotal_usd = await get_insights(
-                args.topic, args.max_insights, verbose=args.verbose
+                args.topic, args.max_insights, verbose=args.verbose, gr_verbose=args.gr_verbose
             )
     except Exception as e:
         print(f"❌ Error while generating insights: {e}")
@@ -667,7 +674,7 @@ async def main_cli() -> None:
                 post_subtotal_usd = 0.0
             else:
                 #print(f"********** generating blog post with the insight: {insight_obj.insight}")
-                post_md, post_prompt_words, post_completion_words, post_subtotal_usd = await generate_blog_post(args.topic, insight_obj, verbose=args.verbose)
+                post_md, post_prompt_words, post_completion_words, post_subtotal_usd = await generate_blog_post(args.topic, insight_obj, verbose=args.verbose, gr_verbose=args.gr_verbose)
 
             # Extract title using LLM instead of regex matching
             if os.getenv("PYTEST_CURRENT_TEST"):
