@@ -560,4 +560,70 @@ Notes:
 - Human-readable markdown is optional and clearly marked as non-canonical
 - Test mode uses dummy data to avoid LLM calls during development
 - Complete documentation rewrite with troubleshooting patterns
+
+## Task: Add SPT Researcher Blog-Generation-Only Mode
+**Last performed:** September 17, 2025
+**Files modified:**
+- `spt_researcher.py` - Enhanced with blog-generation-only mode using `--blog-generation-only` and `--insights-input` flags
+- `sample_insights.json` - Created sample insights file for testing blog-generation-only functionality
+- `test_spt_researcher.py` - Expanded with comprehensive test coverage for new blog-generation-only mode
+- `SPT_RESEARCHER_GUIDE.md` - Updated with documentation for blog-generation-only mode usage
+
+**Steps:**
+1. Add new CLI arguments `--blog-generation-only` and `--insights-input` to argument parser
+2. Create `load_insights_from_file(file_path: Path) -> List[InsightObject]` function for loading structured insights from JSON files
+3. Implement JSON validation with comprehensive error handling for malformed data
+4. Add conditional check for `args.blog_generation_only` flag to skip insight generation
+5. Use provided insight data directly for blog post generation phase
+6. Enhanced data validation with required fields (insight, context, source_reference, key_data) and optional defaults
+7. Preserved backward compatibility: all existing functionality remains unchanged
+8. Created sample insights file for testing and demonstration purposes
+
+**New functionality:**
+- **Flexible Input**: Load insights from JSON files with structured data format
+- **Error Handling**: Comprehensive validation of required and optional fields
+- **Data Format**: JSON array with required fields (insight, context, source_reference, key_data) and optional defaults (priority_level, content_type, target_audience)
+- **CLI Interface**: `--blog-generation-only --insights-input insights.json` for targeted blog generation
+- **Sample Data**: `sample_insights.json` provided for testing and demonstration
+- **Backward Compatibility**: All existing functionality preserved and unchanged
+
+**Performance metrics:**
+- Blog generation only: Fast (skips expensive insight generation phase)
+- Input validation: Minimal overhead with comprehensive error checking
+- Memory usage: Reduced (no GPT-Researcher calls for insight generation)
+- System reliability: Maintained with robust error handling
+
+**Usage examples:**
+```bash
+# Generate blog posts from existing insights
+python spt_researcher.py --blog-generation-only --insights-input insights.json --topic "dummy"
+
+# Generate with custom output and verbose logging
+python spt_researcher.py --blog-generation-only --insights-input my_insights.json --output blog_posts.md --verbose
+
+# Generate with custom insights file
+python spt_researcher.py --blog-generation-only --insights-input sample_insights.json --topic "test"
+```
+
+**Data format specification:**
+```json
+[
+  {
+    "insight": "Companies lose 30% productivity due to inefficient workflows",
+    "context": "Recent industry studies show workflow inefficiencies",
+    "source_reference": "https://forrester.com/study-2024",
+    "key_data": "30% productivity loss, $2.5B annual cost",
+    "priority_level": "high",
+    "content_type": "business",
+    "target_audience": "managers"
+  }
+]
+```
+
+**Important notes:**
+- Required fields: insight, context, source_reference, key_data (all strings)
+- Optional fields: priority_level ("low", "medium", "high"), content_type ("general"), target_audience ("general")
+- File validation occurs before blog post generation begins
+- Error messages provide specific guidance for missing or invalid fields
+- Maintains complete feature parity with existing workflows
 >>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba

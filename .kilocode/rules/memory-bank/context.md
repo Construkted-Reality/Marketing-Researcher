@@ -36,14 +36,33 @@ Search configuration clarification:
 - ✅ Validated end-to-end SearXNG research workflow with professional report output
 
 ## Current Work Focus
-## Key Files Modified Today (SPT Researcher: Two-Stage Insight Extraction & Insights-Only Mode)
-- **`spt_researcher.py`**: Enhanced with two-stage insight extraction using local vLLM server and `--insights-only` mode
-- **`test_spt_researcher.py`**: Expanded with 5 new test functions covering JSON parsing, input override, and debug logging
-- **`SPT_RESEARCHER_GUIDE.md`**: Updated with troubleshooting workflows for JSON extraction and insights-only flow
-- Added `extract_insights_from_raw()` with vLLM-powered JSON-first parser and noise-filtered fallback
-- Implemented `--insights-only` CLI flag to skip blog post generation and exit after insights write
-- Enhanced debug output with timestamped sessions: prompt, raw output, and parsed insights
-- Preserved backward compatibility: canonical JSON (`pain_points.json`) + optional markdown (`--pain-points-markdown`)
+## Key Files Modified Today (SPT Researcher: Blog-Generation-Only Mode)
+- **`spt_researcher.py`**: Enhanced with blog-generation-only mode using `--blog-generation-only` and `--insights-input` flags
+- **`sample_insights.json`**: Created sample insights file for testing blog-generation-only functionality
+- **`test_spt_researcher.py`**: Expanded with comprehensive test coverage for new blog-generation-only mode
+- **`SPT_RESEARCHER_GUIDE.md`**: Updated with documentation for blog-generation-only mode usage
+- Added `load_insights_from_file()` function for loading structured insights from JSON files
+- Implemented `--blog-generation-only` CLI flag to skip insight generation and use provided insights data
+- Added `--insights-input` flag to specify JSON file containing structured insights data
+- Enhanced data validation with comprehensive error handling for malformed JSON files
+- Preserved backward compatibility: all existing functionality remains unchanged
+- JSON input format supports required fields (insight, context, source_reference, key_data) and optional fields (priority_level, content_type, target_audience)
+
+## Performance Metrics
+- Research report generation: ~2 minutes end-to-end (both SearXNG and Tavily)
+- Web source scraping: 15+ relevant sources per query (36 results found with SearXNG)
+- Embedding processing: Fast (distributed server)
+- System reliability: 100% success rate in recent tests
+- SearXNG cost: $0.0224863 per research report (very economical vs. Tavily)
+- Privacy: Complete search privacy achieved with SearXNG integration
+
+## New Blog-Generation-Only Mode Features
+- **Flexible Input**: Load insights from JSON files with structured data format
+- **Error Handling**: Comprehensive validation of required and optional fields
+- **Data Format**: JSON array with required fields (insight, context, source_reference, key_data) and optional defaults
+- **CLI Interface**: `--blog-generation-only --insights-input insights.json` for targeted blog generation
+- **Sample Data**: `sample_insights.json` provided for testing and demonstration
+- **Backward Compatibility**: All existing functionality preserved and unchanged
 
 ## Performance Metrics
 - Research report generation: ~2 minutes end-to-end (both SearXNG and Tavily)

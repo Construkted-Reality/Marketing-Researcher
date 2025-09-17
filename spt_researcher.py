@@ -6,6 +6,8 @@
 # Usage:
 #   python spt_researcher.py --topic "remote work productivity" \
 #       [--output generated_posts.md] [--max-insights 15] [--verbose] [--gr-verbose] [--insights-only]
+#   python spt_researcher.py --blog-generation-only --insights-input insights.json \
+#       [--topic "dummy"] [--output blog_posts.md] [--verbose]
 #
 # The script:
 #   1. Loads .env variables (API keys, endpoints, etc.).
@@ -166,6 +168,83 @@ def count_words(text: str) -> int:
     if not text or not isinstance(text, str):
         return 0
     return len(text.split())
+
+def load_insights_from_file(file_path: Path) -> list[InsightObject]:
+    """
+    Load structured insights from a JSON file.
+    
+    Args:
+        file_path: Path to JSON file containing insights
+        
+    Returns:
+        List of InsightObject instances
+        
+    Raises:
+        ValueError: If file format is invalid or required fields are missing
+    """
+    try:
+        with file_path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        if not isinstance(data, list):
+            raise ValueError("JSON file must contain a list of insights")
+        
+        insights = []
+        for idx, item in enumerate(data):
+            if not isinstance(item, dict):
+                raise ValueError(f"Insight {idx+1}: must be a dictionary")
+            
+            # Validate required fields
+            required_fields = ["insight", "context", "source_reference", "key_data"]
+            for field in required_fields:
+                if field not in item:
+                    raise ValueError(f"Insight {idx+1}: missing required field '{field}'")
+                if not isinstance(item[field], str):
+                    raise ValueError(f"Insight {idx+1}: field '{field}' must be a string")
+            
+            # Create InsightObject with provided data and defaults for optional fields
+            insight_obj = InsightObject(
+                insight=item["insight"],
+                context=item["context"],
+                source_reference=item["source_reference"],
+                key_data=item["key_data"],
+                priority_level=item.get("priority_level", "medium"),
+                content_type=item.get("content_type", "general"),
+                target_audience=item.get("target_audience", "general")
+            )
+            insights.append(insight_obj)
+        
+        return insights
+        
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON format in {file_path}: {e}")
+    except FileNotFoundError:
+        raise ValueError(f"Insights file not found: {file_path}")
+    except Exception as e:
+        raise ValueError(f"Error loading insights from {file_path}: {e}")
+
+def validate_insight_object(obj: InsightObject) -> bool:
+    """
+    Validate that an InsightObject has required fields and proper data types.
+    
+    Args:
+        obj: InsightObject to validate
+        
+    Returns:
+        True if valid, False otherwise
+    """
+    required_fields = [
+        ("insight", str),
+        ("context", str),
+        ("source_reference", str),
+        ("key_data", str)
+    ]
+    
+    for field_name, field_type in required_fields:
+        if not hasattr(obj, field_name) or not isinstance(getattr(obj, field_name), field_type):
+            return False
+    
+    return True
 
 # ----------------------------------------------------------------------
 # Helper – Generate insights
@@ -540,6 +619,16 @@ async def main_cli() -> None:
         action="store_true",
         help="Generate only insights and stop before creating blog posts.",
     )
+    parser.add_argument(
+        "--blog-generation-only",
+        action="store_true",
+        help="Skip insight generation and create blog posts from provided insights data.",
+    )
+    parser.add_argument(
+        "--insights-input",
+        type=str,
+        help="Path to JSON file containing structured insights for blog generation.",
+    )
     args = parser.parse_args()
 
     # ------------------------------------------------------------------
@@ -564,32 +653,64 @@ async def main_cli() -> None:
     # Generate insights list
     # ------------------------------------------------------------------
     try:
-        # If running under pytest, use dummy data to avoid long LLM calls
-        if os.getenv("PYTEST_CURRENT_TEST"):
-            # Create structured dummy insights
-            insights = [
-                InsightObject(
-                    insight=f"Dummy insight {i+1}",
-                    context="This is a dummy context for testing purposes",
-                    source_reference="https://example.com/dummy",
-                    key_data="Dummy data: 100%",
-                    priority_level="medium",
-                    content_type="general",
-                    target_audience="general"
-                ) for i in range(min(args.max_insights, 5))
-            ]
-            prompt_used = f"Dummy prompt for topic '{args.topic}'"
-            raw_output = "Dummy raw output for testing"
-            extraction_json = '[{"insight": "Dummy insight 1", "context": "Dummy context", "source_reference": "https://example.com/dummy", "key_data": "Dummy data", "priority_level": "medium", "content_type": "general", "target_audience": "general"}]'
+        if args.blog_generation_only:
+            # Blog generation only mode - load insights from file
+            if not args.insights_input:
+                print("❌ Error: --insights-input is required when using --blog-generation-only")
+                print("Usage: python spt_researcher.py --blog-generation-only --insights-input insights.json")
+                sys.exit(1)
+            
+            insights_path = Path(args.insights_input)
+            if not insights_path.exists():
+                print(f"❌ Error: Insights file not found: {insights_path}")
+                sys.exit(1)
+            
+            if args.verbose:
+                print(f"📂 Loading insights from: {insights_path.resolve()}")
+            
+            insights = load_insights_from_file(insights_path)
+            prompt_used = f"Blog generation from provided insights file: {args.insights_input}"
+            raw_output = "Insights loaded from file"
+            extraction_json = json.dumps([{
+                "insight": obj.insight,
+                "context": obj.context,
+                "source_reference": obj.source_reference,
+                "key_data": obj.key_data,
+                "priority_level": obj.priority_level,
+                "content_type": obj.content_type,
+                "target_audience": obj.target_audience
+            } for obj in insights])
             research_prompt_words = count_words(prompt_used)
             research_completion_words = count_words(raw_output)
             research_subtotal_usd = 0.0
         else:
-            insights, prompt_used, raw_output, extraction_json, research_prompt_words, research_completion_words, research_subtotal_usd = await get_insights(
-                args.topic, args.max_insights, verbose=args.verbose, gr_verbose=args.gr_verbose
-            )
+            # Normal mode - generate insights using GPT-Researcher
+            # If running under pytest, use dummy data to avoid long LLM calls
+            if os.getenv("PYTEST_CURRENT_TEST"):
+                # Create structured dummy insights
+                insights = [
+                    InsightObject(
+                        insight=f"Dummy insight {i+1}",
+                        context="This is a dummy context for testing purposes",
+                        source_reference="https://example.com/dummy",
+                        key_data="Dummy data: 100%",
+                        priority_level="medium",
+                        content_type="general",
+                        target_audience="general"
+                    ) for i in range(min(args.max_insights, 5))
+                ]
+                prompt_used = f"Dummy prompt for topic '{args.topic}'"
+                raw_output = "Dummy raw output for testing"
+                extraction_json = '[{"insight": "Dummy insight 1", "context": "Dummy context", "source_reference": "https://example.com/dummy", "key_data": "Dummy data", "priority_level": "medium", "content_type": "general", "target_audience": "general"}]'
+                research_prompt_words = count_words(prompt_used)
+                research_completion_words = count_words(raw_output)
+                research_subtotal_usd = 0.0
+            else:
+                insights, prompt_used, raw_output, extraction_json, research_prompt_words, research_completion_words, research_subtotal_usd = await get_insights(
+                    args.topic, args.max_insights, verbose=args.verbose, gr_verbose=args.gr_verbose
+                )
     except Exception as e:
-        print(f"❌ Error while generating insights: {e}")
+        print(f"❌ Error while loading/generating insights: {e}")
         sys.exit(1)
 
     if not insights:
