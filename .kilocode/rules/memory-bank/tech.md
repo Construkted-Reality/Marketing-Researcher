@@ -1,4 +1,4 @@
-# Technology Stack: Content Marketing Research System
+# Technology Stack: Content Marketing Research & Automation System
 
 ## Core Technologies
 
@@ -6,13 +6,22 @@
 - **Python 3.12**: Primary development language
 - **Async/Await**: Required for GPT Researcher framework compatibility
 - **Type Hints**: Used throughout for better code maintainability
+- **JSON Processing**: Extensive JSON handling for canonical workflows
 
 ### AI/ML Frameworks
-- **GPT Researcher**: Orchestrates research workflow and report generation
-- **vLLM**: High-performance LLM serving for chat completions
+- **GPT Researcher**: Orchestrates research workflow and insight extraction
+- **vLLM**: High-performance LLM serving for chat completions and content generation
 - **Ollama**: Local LLM serving with embedding support
 - **Sentence Transformers**: Local embedding models (HuggingFace)
 - **LangChain**: Integration layer for different AI providers
+- **LLM Guidance System**: Sophisticated prompt engineering with voice selection
+
+### Content Generation Technologies
+- **Markdown Processing**: Dynamic content generation and file management
+- **Template Engineering**: Sophisticated prompt templates with variable substitution
+- **Voice Selection System**: Context-aware writing style adaptation (New Yorker, Atlantic, Wired)
+- **Quality Scoring**: Source analysis and content quality assessment
+- **Image Prompt Generation**: Structured prompts for visual content creation
 
 ### Networking & APIs
 - **OpenAI Client Library**: Unified API interface for different LLM providers
@@ -93,6 +102,12 @@ pytest = "*"                      # Testing framework for development
 - **vLLM Server**: External service (192.168.8.90:42069)
 - **Ollama Server**: External service (192.168.8.90:11434)
 
+### Content Generation Dependencies
+- **LLM Guidance Templates**: Markdown-based prompt engineering system
+- **Company Context Files**: Domain-specific constraints and product information
+- **Voice Style Definitions**: Writing style templates for different publication types
+- **JSON Schema Validation**: Structured data handling for insights and content
+
 ## Tool Usage Patterns
 
 ### Configuration Management
@@ -157,6 +172,12 @@ def test_component():
 3. Create dedicated test script
 4. Update `SEARCH_ENGINE_SWITCHING_GUIDE.md`
 
+### Content Generation Workflow Development
+1. Update LLM guidance templates in `llm_guidance/` directory
+2. Test voice selection and content quality with sample insights
+3. Validate company context constraints prevent hallucination
+4. Update content marketing guidance for new domains or products
+
 ### Debugging Connection Issues
 1. Run component-specific test scripts
 2. Check server status and connectivity
@@ -168,6 +189,7 @@ def test_component():
 2. Adjust batch sizes for embedding processing
 3. Optimize network round-trips
 4. Cache frequently used embeddings
+5. Optimize content generation templates for faster processing
 
 ## Security Considerations
 

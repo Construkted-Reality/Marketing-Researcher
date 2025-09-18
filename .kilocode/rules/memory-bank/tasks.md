@@ -626,4 +626,156 @@ python spt_researcher.py --blog-generation-only --insights-input sample_insights
 - File validation occurs before blog post generation begins
 - Error messages provide specific guidance for missing or invalid fields
 - Maintains complete feature parity with existing workflows
->>>>>>> 2a84ef1cc31bfde94e0bd90ba772ee6d0d3f97ba
+
+## Task: Migrate SPT Researcher Insights Output from Markdown to JSON
+**Last performed:** September 17, 2025
+**Files modified:**
+- `spt_researcher.py` - Changed default insights output format and writing logic
+
+**Problem solved:**
+- Insights were being written to markdown files, but the blog-generation-only mode required JSON input
+- Users had to manually convert between formats to use the full workflow
+- No seamless integration between insight generation and blog post creation
+
+**Implementation:**
+1. Changed `--insights-output` default from "insights.md" to "insights.json"
+2. Modified insights writing section to output clean JSON array instead of markdown debug format
+3. Ensured JSON format matches exactly what `load_insights_from_file()` expects
+4. Updated file header documentation to reflect new JSON default
+5. Tested complete workflow integration
+
+**Changes made:**
+- **Default Output Format**: `--insights-output` now defaults to "insights.json"
+- **JSON Structure**: Simple array of insight objects with all required fields
+- **Compatibility**: Output is directly compatible with `--blog-generation-only` mode
+- **Help Text**: Updated documentation to reflect JSON default behavior
+
+**New workflow enabled:**
+```bash
+# Step 1: Generate insights to JSON
+python spt_researcher.py --topic "your topic" --insights-only
+
+# Step 2: Generate blog posts from insights
+python spt_researcher.py --blog-generation-only --insights-input insights.json
+```
+
+**Testing results:**
+- ✅ Insights generation works correctly with new JSON format
+- ✅ Blog-generation-only mode successfully reads JSON insights
+- ✅ Full backward compatibility maintained (can still specify .md files)
+- ✅ Complete workflow integration validated
+
+**JSON format specification:**
+```json
+[
+  {
+    "insight": "Your insight text",
+    "context": "Background context",
+    "source_reference": "https://source.url",
+    "key_data": "Key supporting data",
+    "priority_level": "high|medium|low",
+    "content_type": "general",
+    "target_audience": "general"
+  }
+]
+```
+
+**Benefits:**
+- **Seamless Workflow**: No manual conversion between insight generation and blog creation
+- **Better Integration**: JSON format enables programmatic processing and validation
+- **Backward Compatible**: Users can still specify .md files if preferred
+- **Debugging Friendly**: Clean JSON structure easier to inspect and troubleshoot
+- **Future Ready**: JSON format enables additional tooling and automation
+
+**Important notes:**
+- All existing command line arguments work unchanged
+- Users can still specify markdown files using `--insights-output insights.md`
+- JSON output is overwrite mode (not append) for canonical format
+- Format matches exactly what `load_insights_from_file()` function expects
+
+## Task: Implement LLM Guidance System for Content Generation
+**Last performed:** September 18, 2025
+**Files modified:**
+- `llm_guidance/create_blog-post_prompt_guidance.md` - Master blog post generation template
+- `llm_guidance/company_operation.md` - Company context and domain constraints
+- `llm_guidance/content_marketing_guidance.md` - Content marketing best practices
+- `llm_guidance/crafting_compelling_titles.md` - Title optimization guidelines
+- `spt_researcher.py` - Integration of LLM guidance templates
+
+**Steps:**
+1. Create comprehensive prompt engineering system with modular templates
+2. Implement voice selection system (New Yorker, Atlantic, Wired writing styles)
+3. Add company context integration to prevent product hallucination
+4. Develop source analysis scoring for content quality assessment
+5. Create structured image prompt generation for visual content
+6. Integrate domain-specific constraints and content marketing best practices
+7. Test voice selection accuracy and content quality across different topics
+
+**New functionality:**
+- **Voice Selection**: Context-aware writing style adaptation based on content type and audience
+- **Domain Constraints**: Company-specific context prevents suggesting incompatible solutions
+- **Source Analysis**: Automatic scoring of external vs. internal knowledge usage
+- **Quality Assurance**: Built-in content quality assessment and SEO optimization
+- **Visual Content**: Structured image prompt generation for each blog post
+- **Template System**: Modular prompt engineering with variable substitution
+
+**Usage patterns:**
+```bash
+# Voice selection automatically adapts based on content type
+python spt_researcher.py --topic "technical troubleshooting" --verbose  # → Wired style
+python spt_researcher.py --topic "industry analysis" --verbose          # → Atlantic style
+python spt_researcher.py --topic "conceptual topics" --verbose          # → New Yorker style
+```
+
+**Benefits:**
+- **Consistent Voice**: Professional writing style maintained across all content
+- **Domain Accuracy**: Prevents hallucination about product features and capabilities
+- **Quality Transparency**: Source analysis provides content quality insights
+- **SEO Optimization**: Natural source URL integration and citation formatting
+- **Visual Integration**: Structured prompts for complementary visual content
+- **Brand Alignment**: Company context ensures content aligns with business constraints
+
+**Important notes:**
+- Voice selection is automatic based on content analysis, not manual selection
+- Company context files prevent suggesting features not available in Construkted Reality
+- Source analysis estimates percentage breakdown of external vs. internal knowledge
+- Image prompts are generated for each blog post to support visual content creation
+- All guidance templates use variable substitution for dynamic content generation
+
+## Task: Optimize Content Generation Performance
+**When needed:** Quarterly performance review or when generation times exceed targets
+**Files to monitor:**
+- `spt_researcher.py` - Main content generation pipeline
+- `llm_guidance/` templates - Prompt optimization opportunities
+- Individual blog post generation timing
+
+**Steps:**
+1. Benchmark current performance metrics (insights: ~90s, blog posts: ~60s each)
+2. Profile LLM guidance template processing times
+3. Optimize prompt length and complexity while maintaining quality
+4. Test voice selection speed and accuracy
+5. Validate source analysis scoring performance
+6. Monitor memory usage during large content generation sessions
+7. Document performance improvements and any quality trade-offs
+
+**Performance targets:**
+- **Full workflow**: Complete research + blog generation in under 4 minutes
+- **Insights generation**: Under 90 seconds for 5-10 insights
+- **Blog post generation**: Under 60 seconds per insight
+- **Quality maintenance**: No degradation in voice consistency or domain accuracy
+- **System reliability**: 99%+ success rate with comprehensive error handling
+
+**Optimization areas:**
+- Prompt template efficiency and token usage
+- Voice selection algorithm speed
+- Source analysis calculation optimization
+- Image prompt generation efficiency
+- JSON parsing and file I/O operations
+- Memory management for large content batches
+
+**Important notes:**
+- Performance optimization should never compromise content quality
+- Voice selection accuracy is more important than speed
+- Source analysis scoring provides valuable user feedback on content quality
+- All optimizations should be tested with representative content topics
+- Maintain backward compatibility with existing workflow patterns

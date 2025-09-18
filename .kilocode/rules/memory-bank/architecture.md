@@ -28,8 +28,17 @@
 ### Core Files
 - **`test.py`**: Main research script with async wrapper for GPT Researcher
 - **`test_researcher.py`**: Alternative research script with different query
-- **`spt_researcher.py`** – JSON-first pain-point & blog-post generator with canonical dumps and reproducible workflows
+- **`spt_researcher.py`** – Complete content marketing automation with JSON-first insights and sophisticated blog generation
 - **`.env`**: Configuration file containing all server endpoints and API keys
+
+### Content Generation System
+- **`llm_guidance/`**: LLM prompt engineering and guidance system
+  - **`create_blog-post_prompt_guidance.md`**: Master blog post generation template with voice selection
+  - **`company_operation.md`**: Company context and domain constraints
+  - **`content_marketing_guidance.md`**: Content marketing best practices
+  - **`crafting_compelling_titles.md`**: Title optimization guidelines
+  - **`extract_insight_prompt.md`**: Insight extraction prompt templates
+  - **`context.md`**: Current project context for LLM guidance
 
 ### Testing Suite
 - **`test_vllm_direct.py`**: Direct vLLM server connectivity validation
@@ -44,8 +53,13 @@
 - **`switch_search.py`**: Automated utility for switching between search engines
 - **`EMBEDDING_SWITCHING_GUIDE.md`**: User documentation for embedding options
 - **`SEARCH_ENGINE_SWITCHING_GUIDE.md`**: User documentation for search engine options
-- **`SPT_RESEARCHER_GUIDE.md`**: Complete documentation for JSON-first pain-point generation
+- **`SPT_RESEARCHER_GUIDE.md`**: Complete documentation for JSON-first content marketing automation
 - **`Pipfile`**: Python dependency management
+
+### Output Structure
+- **`posts/`**: Individual blog post files with slugified titles
+- **`insights.json`**: Canonical JSON insights for reproducible workflows
+- **`sample_insights.json`**: Template insights for testing and demonstration
 
 ## Key Technical Decisions
 
@@ -78,6 +92,11 @@
 - **Decision**: Transform SPT researcher to use strict JSON schema with canonical dumps
 - **Rationale**: Eliminate parsing noise, enable reproducible workflows, support troubleshooting
 - **Implementation**: JSON-only prompts, noise-filtered fallback, step-1/step-2 decoupling
+
+### 7. Content Marketing Automation Pipeline
+- **Decision**: Build comprehensive content generation system with voice selection and quality scoring
+- **Rationale**: Automate entire workflow from research to publication-ready blog posts
+- **Implementation**: LLM guidance system, sophisticated prompt engineering, company context integration
 
 ## Design Patterns
 
@@ -161,11 +180,13 @@ test_*.py scripts →
 ### SPT Researcher Workflow Path
 ```
 spt_researcher.py → load_dotenv() →
-├─ Step-1: get_pain_points() → JSON-first parsing → pain_points.json
-├─ Step-2: generate_blog_post() for each pain point
-├─ Optional: --pain-points-input → skip step-1, load existing JSON
-├─ Optional: --pain-points-markdown → human-readable review file
-└─ outputs: canonical JSON + individual posts + combined markdown
+├─ Step-1: get_insights() → JSON-first parsing → insights.json
+├─ Step-2: generate_blog_post() for each insight
+├─ Optional: --insights-only → generate insights, skip blog posts
+├─ Optional: --blog-generation-only → skip insights, use existing JSON
+├─ Optional: --insights-input → load existing JSON insights
+├─ LLM Guidance: voice selection, company context, quality scoring
+└─ outputs: canonical JSON + individual posts + combined markdown + image prompts
 ```
 
 ## Server Specifications

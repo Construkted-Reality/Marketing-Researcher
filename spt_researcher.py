@@ -5,9 +5,16 @@
 # --------------------------------------------------------------
 # Usage:
 #   python spt_researcher.py --topic "remote work productivity" \
-#       [--output generated_posts.md] [--max-insights 15] [--verbose] [--gr-verbose] [--insights-only]
-#   python spt_researcher.py --blog-generation-only --insights-input insights.json \
-#       [--topic "dummy"] [--output blog_posts.md] [--verbose]
+#       [--max-insights 15] [--verbose] [--gr-verbose] [--insights-only]
+#   python spt_researcher.py --insights-input insights.json \
+#       [--topic "dummy"] [--verbose]
+#
+# The script:
+#   1. Loads .env variables (API keys, endpoints, etc.).
+#   2. Generates structured insights via GPT‑Researcher.
+#   3. For each insight, generates a blog‑post draft.
+#   4. Writes insights to JSON file (default: insights.json) and blog posts to output file.
+# --------------------------------------------------------------
 #
 # The script:
 #   1. Loads .env variables (API keys, endpoints, etc.).
@@ -589,11 +596,6 @@ async def main_cli() -> None:
         help="Broad research topic (e.g., 'remote work productivity').",
     )
     parser.add_argument(
-        "--output",
-        default="generated_blog_posts.md",
-        help="Path to the markdown file that will contain the results.",
-    )
-    parser.add_argument(
         "--max-insights",
         type=int,
         default=15,
@@ -601,8 +603,8 @@ async def main_cli() -> None:
     )
     parser.add_argument(
         "--insights-output",
-        default="insights.md",
-        help="Path to markdown file that will contain the initial insight list.",
+        default="insights.json",
+        help="Path to JSON file that will contain the initial insight list.",
     )
     parser.add_argument(
         "--verbose",
@@ -620,14 +622,9 @@ async def main_cli() -> None:
         help="Generate only insights and stop before creating blog posts.",
     )
     parser.add_argument(
-        "--blog-generation-only",
-        action="store_true",
-        help="Skip insight generation and create blog posts from provided insights data.",
-    )
-    parser.add_argument(
         "--insights-input",
         type=str,
-        help="Path to JSON file containing structured insights for blog generation.",
+        help="Path to JSON file containing structured insights for blog generation. When provided, skips insight generation and creates blog posts from the file.",
     )
     args = parser.parse_args()
 
@@ -653,13 +650,8 @@ async def main_cli() -> None:
     # Generate insights list
     # ------------------------------------------------------------------
     try:
-        if args.blog_generation_only:
-            # Blog generation only mode - load insights from file
-            if not args.insights_input:
-                print("❌ Error: --insights-input is required when using --blog-generation-only")
-                print("Usage: python spt_researcher.py --blog-generation-only --insights-input insights.json")
-                sys.exit(1)
-            
+        if args.insights_input:
+            # Load insights from file and skip generation
             insights_path = Path(args.insights_input)
             if not insights_path.exists():
                 print(f"❌ Error: Insights file not found: {insights_path}")
@@ -721,54 +713,34 @@ async def main_cli() -> None:
         print(f"✅ Retrieved {len(insights)} structured insights.\n")
 
     # ------------------------------------------------------------------
-    # Write insights to separate markdown file with debug information
+    # Write insights to JSON file with debug information
     # ------------------------------------------------------------------
     insights_path = Path(args.insights_output)
     try:
         insights_path.parent.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
-        # Append mode to preserve history
-        with insights_path.open("a", encoding="utf-8") as f:
-            # Add separator if file already has content
-            if insights_path.exists() and insights_path.stat().st_size > 0:
-                f.write("\n\n---\n\n")
-            
-            f.write(f"# Insights Debug Session: {timestamp}\n\n")
-            f.write(f"**Topic:** {args.topic}\n")
-            f.write(f"**Max Insights:** {args.max_insights}\n\n")
-            
-            f.write("## Prompt Used\n\n")
-            f.write(f"```\n{prompt_used}\n```\n\n")
-            
-            f.write("## Raw Model Output\n\n")
-            f.write(f"```\n{raw_output}\n```\n\n")
-            
-            f.write("## Extracted Insights (JSON)\n\n")
-            f.write(f"```json\n{extraction_json}\n```\n\n")
-            
-            f.write("## Parsed Insights\n\n")
-            for idx, insight_obj in enumerate(insights, start=1):
-                f.write(f"## Insight #{idx}\n")
-                f.write(f"**Insight:** {insight_obj.insight}\n\n")
-                f.write(f"**Context:** {insight_obj.context}\n\n")
-                f.write(f"**Source Reference:** {insight_obj.source_reference}\n\n")
-                f.write(f"**Key Data:** {insight_obj.key_data}\n\n")
-                f.write(f"**Priority Level:** {insight_obj.priority_level}\n\n")
-                f.write(f"**Content Type:** {insight_obj.content_type}\n\n")
-                f.write(f"**Target Audience:** {insight_obj.target_audience}\n\n")
-            f.write("\n")
-            
-            # Add cost summary for initial research step
-            f.write("## Cost Summary\n\n")
-            f.write(f"**Initial Research Step:**\n")
-            f.write(f"- prompt_words: {research_prompt_words}\n")
-            f.write(f"- completion_words: {research_completion_words}\n")
-            f.write(f"- subtotal_usd: ${research_subtotal_usd:.4f}\n")
-            f.write("\n")
+        # Create JSON-compatible data structure that matches load_insights_from_file() expectations
+        # The function expects a list of insight dictionaries, so we write the insights array directly
+        insights_for_json = []
+        for insight_obj in insights:
+            insight_dict = {
+                "insight": insight_obj.insight,
+                "context": insight_obj.context,
+                "source_reference": insight_obj.source_reference,
+                "key_data": insight_obj.key_data,
+                "priority_level": insight_obj.priority_level,
+                "content_type": insight_obj.content_type,
+                "target_audience": insight_obj.target_audience
+            }
+            insights_for_json.append(insight_dict)
+        
+        # Write JSON data to file (overwrite mode for canonical format)
+        with insights_path.open("w", encoding="utf-8") as f:
+            json.dump(insights_for_json, f, indent=2, ensure_ascii=False)
         
         if args.verbose:
-            print(f"✅ Insights debug information appended to {insights_path.resolve()}")
+            print(f"✅ Insights debug information written to {insights_path.resolve()}")
     except Exception as e:
         print(f"❌ Failed to write insights file: {e}")
 
@@ -784,7 +756,6 @@ async def main_cli() -> None:
     # ------------------------------------------------------------------
     # Generate blog posts
     # ------------------------------------------------------------------
-    posts: list[str] = []
     for idx, insight_obj in enumerate(insights, start=1):
         try:
             if os.getenv("PYTEST_CURRENT_TEST"):
@@ -822,30 +793,11 @@ async def main_cli() -> None:
             except Exception as e:
                 print(f"❌ Failed to write blog post file '{filename}': {e}")
 
-            posts.append(f"## {idx}. {insight_obj.insight}\n\n{post_md}\n")
         except Exception as e:
             print(f"⚠️ Skipping insight due to error: {e}")
 
-    if not posts:
-        print("⚠️ No blog posts were successfully generated.")
-        sys.exit(0)
-
-    # ------------------------------------------------------------------
-    # Write output file
-    # ------------------------------------------------------------------
-    output_path = Path(args.output)
-    try:
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        with output_path.open("w", encoding="utf-8") as f:
-            f.write(f"# Blog Posts for Topic: {args.topic}\n\n")
-            for post in posts:
-                f.write(post)
-                f.write("\n---------\n\n")
-        if args.verbose:
-            print(f"✅ All posts written to {output_path.resolve()}")
-    except Exception as e:
-        print(f"❌ Failed to write output file: {e}")
-        sys.exit(1)
+    if args.verbose:
+        print(f"✅ Blog post generation completed for {len(insights)} insights.")
 
 # ----------------------------------------------------------------------
 # Entry point
@@ -853,4 +805,3 @@ async def main_cli() -> None:
 if __name__ == "__main__":
     # Run the async main function
     asyncio.run(main_cli())
-    
