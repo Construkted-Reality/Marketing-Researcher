@@ -1,0 +1,20 @@
+[
+  {
+    "insight": "Photogrammetry software struggles to scale with large image collections, forcing users to split projects or juggle multiple tools.",
+    "context": "LinkedIn contributors note that many photogrammetry packages impose hard limits on the number of images and output resolution, which leads engineers to break datasets into smaller chunks or run several software solutions in parallel, adding complexity and time to the workflow.",
+    "source_reference": "https://www.linkedin.com/advice/0/what-challenges-processing-large-datasets-photogrammetry-cqqzf",
+    "key_data": "Users report software caps on image count and model resolution; workaround involves chunking datasets and using multiple applications.",
+    "priority_level": "high",
+    "content_type": "how‑to guide",
+    "target_audience": "technical (data engineers, GIS specialists, photogrammetry technicians)"
+  },
+  {
+    "insight": "Insufficient image quality, overlap, or problematic surface characteristics (e.g., reflective or texture‑less) trigger frequent processing failures such as “Did not Generate” errors.",
+    "context": "Forum posts and blog articles repeatedly mention that lack of uniform exposure, adequate overlap, or textured surfaces leads to incomplete point clouds and outright generation failures, especially when capturing moving objects or highly reflective materials.",
+    "source_reference": "https://forum.vectorworks.net/index.php?/topic/62147-photogrammetry-whos-doing-it/; https://www.spatialpost.com/advantages-and-disadvantages-of-photogrammetry/; https://www.pix-pro.com/blog/photogrammetry-limits",
+    "key_data": "Multiple users receive “Did not Generate” notices; common cited causes are low overlap, non‑textured or reflective surfaces, and moving subjects.",
+    "priority_level": "medium",
+    "content_type": "troubleshooting checklist",
+    "target_audience": "general photogrammetry practitioners (architects, surveyors, drone operators)"
+  }
+]

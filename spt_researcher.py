@@ -5,9 +5,9 @@
 # --------------------------------------------------------------
 # Usage:
 #   python spt_researcher.py --topic "remote work productivity" \
-#       [--max-insights 15] [--verbose] [--gr-verbose] [--insights-only]
+#       [--max-insights 15] [--verbose] [--gr-verbose] [--insights-only] [--posts-dir custom_folder]
 #   python spt_researcher.py --insights-input insights.json \
-#       [--topic "dummy"] [--verbose]
+#       [--topic "dummy"] [--verbose] [--posts-dir custom_folder]
 #
 # The script:
 #   1. Loads .env variables (API keys, endpoints, etc.).
@@ -626,6 +626,12 @@ async def main_cli() -> None:
         type=str,
         help="Path to JSON file containing structured insights for blog generation. When provided, skips insight generation and creates blog posts from the file.",
     )
+    parser.add_argument(
+        "--posts-dir",
+        type=str,
+        default="posts",
+        help="Directory to save blog post files (default: 'posts'). Will be created if it doesn't exist.",
+    )
     args = parser.parse_args()
 
     # ------------------------------------------------------------------
@@ -776,7 +782,7 @@ async def main_cli() -> None:
                 title = await extract_title_from_blog_post(post_md, insight_obj.insight, verbose=args.verbose)
 
             # Write individual markdown file with cost summary
-            posts_dir = Path("posts")
+            posts_dir = Path(args.posts_dir)
             posts_dir.mkdir(parents=True, exist_ok=True)
             filename = slugify(title) + ".md"
             file_path = posts_dir / filename
