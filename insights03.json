@@ -1,0 +1,26 @@
+[
+  {
+    "insight": "Processing time for large photogrammetry projects remains prohibitive even on high‑end workstations.",
+    "context": "A user with a 12‑core i7, 28 GB RAM, RTX 3090 and fast NVMe drives spent 3 days generating a point cloud and another 7 days building a 1.5 billion‑polygon mesh in RealityCapture. Suggested mitigations include moving the cache to a local SSD and down‑sampling images to 8‑bit JPEG at ~50 % resolution.",
+    "source_reference": [
+      "https://www.reddit.com/r/photogrammetry/comments/zz6v8w/reality_capture_took_9_days_and_created_15/",
+      "https://www.reddit.com/r/photogrammetry/comments/1ljt6un/ultra_fast_photogrammetry_pipeline/"
+    ],
+    "key_data": "9 days total processing time on a high‑end rig; 1.5 B polygon mesh; 28 GB RAM, RTX 3090.",
+    "priority_level": "high",
+    "content_type": "troubleshooting/optimization guide",
+    "target_audience": "technical"
+  },
+  {
+    "insight": "Thin structures and complex geometry (e.g., bridge rails) frequently result in low‑quality meshes with holes and uneven surfaces.",
+    "context": "Multiple users report Meshroom producing meshes with holes and bumpy surfaces, and commercial tools (Meshroom, RealityCapture, Agisoft, Pix4D) struggling to capture thin rail elements on a bridge. The issues stem from insufficient image overlap, suboptimal shooting angles, and lack of post‑processing tricks.",
+    "source_reference": [
+      "https://www.reddit.com/r/photogrammetry/comments/12lnf0v/meshroom_why_is_the_result_so_low_quality_holes/",
+      "https://www.reddit.com/r/photogrammetry/"
+    ],
+    "key_data": "Repeated complaints of holes and surface artifacts; specific challenge noted for thin rail capture across four major software packages.",
+    "priority_level": "medium",
+    "content_type": "how‑to / best‑practices article",
+    "target_audience": "general to intermediate"
+  }
+]

@@ -22,13 +22,13 @@
 #   3. For each insight, generates a blog‑post draft.
 #   4. Writes the combined markdown to the output file.
 # --------------------------------------------------------------
-
+ 
 import argparse
 import asyncio
 import json
 import os
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import re
 from datetime import datetime
@@ -36,25 +36,24 @@ from typing import Dict, Any, Optional, List, Tuple
 from dotenv import load_dotenv
 from gpt_researcher import GPTResearcher
 from openai import OpenAI
-
-
+ 
+ 
 @dataclass
 class InsightObject:
     """Data class representing a structured insight with context and metadata."""
     insight: str = ""
     context: str = ""
-    source_reference: str = ""
+    source_reference: List[str] = field(default_factory=list)
     key_data: str = ""
     priority_level: str = "medium"
     content_type: str = "general"
     target_audience: str = "general"
-
-
+ 
 CONTEXT_FILE = Path("llm_guidance/context.md")
 TITLES_FILE = Path("llm_guidance/crafting_compelling_titles.md")
 COMPANY_OPERATION_FILE = Path("llm_guidance/company_operation.md")
 CONTENT_MARKETING_GUIDANCE_FILE = Path("llm_guidance/content_marketing_guidance.md")
-
+ 
 # Voice definitions (mirroring the associative array in the Bash script)
 VOICE_DEFINITIONS: Dict[str, str] = {
     "TheNewYorker": (
@@ -78,7 +77,7 @@ VOICE_DEFINITIONS: Dict[str, str] = {
         "- Prompt cheat‑sheet: Write like a Wired feature: tech‑forward, fast‑paced, with vivid metaphors and a ‘what it means for the reader’ angle."
     ),
 }
-
+ 
 FORMATTING_RULES = (
     "**Formatting rules** "
     "- Do **not** use any tables, ASCII‑art tables, or Markdown tables. "
@@ -86,10 +85,10 @@ FORMATTING_RULES = (
     "- Avoid other “grid‑like” structures; use prose instead. "
     "- Deliver a piece that fulfills the voice and purpose while respecting the formatting rules."
 )
-
+ 
 #INSIGHT_PROMPT_FILE = Path("llm_guidance/insight_prompt_guidance.md")
 #CREATE_BLOG_PROMPT_FILE = Path("llm_guidance/create_blog-post_guidance.md")
-
+ 
 def load_prompt_template(template_name: str, **kwargs) -> str:
     """Load a prompt template from the prompts directory and format it with provided variables.
     Uses brace-safe formatting to avoid conflicts with JSON braces in templates."""
@@ -106,7 +105,7 @@ def load_prompt_template(template_name: str, **kwargs) -> str:
     except Exception as e:
         sys.stderr.write(f"Error loading prompt template {template_name}: {e}\n")
         sys.exit(1)
-
+ 
 def read_file(path: Path) -> str:
     """Read a file and return its content as a string."""
     try:
@@ -114,8 +113,8 @@ def read_file(path: Path) -> str:
     except Exception as e:
         sys.stderr.write(f"Error reading {path}: {e}\n")
         sys.exit(1)
-
-
+ 
+ 
 # ----------------------------------------------------------------------
 # Helper – Load environment & ensure required variables are present
 # ----------------------------------------------------------------------
@@ -127,23 +126,23 @@ def load_environment() -> None:
     if not openai_api_base:
         raise ValueError("OPENAI_API_BASE environment variable is not set.")
     os.environ["OPENAI_API_BASE"] = openai_api_base
-
+ 
     # Set a reliable retriever to avoid SearXNG timeouts.
     # Default to Tavily (commercial) with MCP fallback; this works even if
     # the SearXNG instance is unreachable.
     #os.environ["RETRIEVER"] = "tavily,mcp"
-
+ 
     # Validate model name – required for the vLLM server
     openai_model_name = os.getenv("OPENAI_MODEL_NAME")
     if not openai_model_name:
         raise ValueError("OPENAI_MODEL_NAME environment variable is not set.")
     os.environ["OPENAI_MODEL_NAME"] = openai_model_name
-
+ 
     # Provide a dummy key if the downstream server does not need it
     os.environ["OPENAI_API_KEY"] = os.getenv(
         "OPENAI_API_KEY", "sk-dummy-key-if-not-needed"
     )
-
+ 
 def slugify(text: str) -> str:
     """
     Convert a string to a safe filename slug.
@@ -153,7 +152,7 @@ def slugify(text: str) -> str:
     - Strip leading/trailing underscores
     """
     import re
-
+ 
     # Replace any character that is not a letter, number, or underscore with underscore
     slug = re.sub(r"[^\w]+", "_", text.lower())
     # Collapse consecutive underscores
@@ -161,7 +160,7 @@ def slugify(text: str) -> str:
     # Remove leading/trailing underscores
     slug = slug.strip("_")
     return slug
-
+ 
 def count_words(text: str) -> int:
     """
     Count words in text using simple whitespace splitting.
@@ -175,7 +174,7 @@ def count_words(text: str) -> int:
     if not text or not isinstance(text, str):
         return 0
     return len(text.split())
-
+ 
 def load_insights_from_file(file_path: Path) -> list[InsightObject]:
     """
     Load structured insights from a JSON file.
@@ -206,8 +205,14 @@ def load_insights_from_file(file_path: Path) -> list[InsightObject]:
             for field in required_fields:
                 if field not in item:
                     raise ValueError(f"Insight {idx+1}: missing required field '{field}'")
-                if not isinstance(item[field], str):
-                    raise ValueError(f"Insight {idx+1}: field '{field}' must be a string")
+                if field == "source_reference":
+                    if not isinstance(item[field], list):
+                        raise ValueError(f"Insight {idx+1}: field '{field}' must be a list of strings")
+                    if not all(isinstance(src, str) for src in item[field]):
+                        raise ValueError(f"Insight {idx+1}: all source_reference entries must be strings")
+                else:
+                    if not isinstance(item[field], str):
+                        raise ValueError(f"Insight {idx+1}: field '{field}' must be a string")
             
             # Create InsightObject with provided data and defaults for optional fields
             insight_obj = InsightObject(
@@ -229,7 +234,7 @@ def load_insights_from_file(file_path: Path) -> list[InsightObject]:
         raise ValueError(f"Insights file not found: {file_path}")
     except Exception as e:
         raise ValueError(f"Error loading insights from {file_path}: {e}")
-
+ 
 def validate_insight_object(obj: InsightObject) -> bool:
     """
     Validate that an InsightObject has required fields and proper data types.
@@ -243,7 +248,7 @@ def validate_insight_object(obj: InsightObject) -> bool:
     required_fields = [
         ("insight", str),
         ("context", str),
-        ("source_reference", str),
+        ("source_reference", list),
         ("key_data", str)
     ]
     
@@ -252,7 +257,7 @@ def validate_insight_object(obj: InsightObject) -> bool:
             return False
     
     return True
-
+ 
 # ----------------------------------------------------------------------
 # Helper – Generate insights
 # ----------------------------------------------------------------------
@@ -383,7 +388,7 @@ async def extract_insights_from_raw(
                     insight_obj = InsightObject(
                         insight=item.get("insight", ""),
                         context=item.get("context", ""),
-                        source_reference=item.get("source_reference", ""),
+                        source_reference=item.get("source_reference", []),
                         key_data=item.get("key_data", ""),
                         priority_level=item.get("priority_level", "medium"),
                         content_type=item.get("content_type", "general"),
@@ -426,7 +431,7 @@ async def extract_insights_from_raw(
             if verbose:
                 print(f"✅ Heuristic parsing extracted {len(fallback_insights[:max_insights])} insights")
             return fallback_insights[:max_insights], json_output
-            
+          
     except Exception as e:
         if verbose:
             print(f"⚠️ Extraction failed: {e}, using fallback method")
@@ -504,7 +509,7 @@ async def extract_title_from_blog_post(
             if verbose:
                 print(f"⚠️ Title extraction gave unreasonable result: '{title}', using fallback")
             return insight
-            
+          
     except Exception as e:
         if verbose:
             print(f"⚠️ Title extraction failed: {e}, using insight as fallback")
@@ -544,7 +549,7 @@ async def generate_blog_post(
         insight=insight_obj.insight,
         context=insight_obj.context,
         key_data=insight_obj.key_data,
-        source_reference=insight_obj.source_reference,
+        source_reference="; ".join(insight_obj.source_reference) if insight_obj.source_reference else "",
         priority_level=insight_obj.priority_level,
         content_type=insight_obj.content_type,
         target_audience=insight_obj.target_audience,
@@ -690,7 +695,7 @@ async def main_cli() -> None:
                     InsightObject(
                         insight=f"Dummy insight {i+1}",
                         context="This is a dummy context for testing purposes",
-                        source_reference="https://example.com/dummy",
+                        source_reference=["https://example.com/dummy"],
                         key_data="Dummy data: 100%",
                         priority_level="medium",
                         content_type="general",
@@ -699,7 +704,7 @@ async def main_cli() -> None:
                 ]
                 prompt_used = f"Dummy prompt for topic '{args.topic}'"
                 raw_output = "Dummy raw output for testing"
-                extraction_json = '[{"insight": "Dummy insight 1", "context": "Dummy context", "source_reference": "https://example.com/dummy", "key_data": "Dummy data", "priority_level": "medium", "content_type": "general", "target_audience": "general"}]'
+                extraction_json = '[{"insight": "Dummy insight 1", "context": "Dummy context", "source_reference": ["https://example.com/dummy"], "key_data": "Dummy data", "priority_level": "medium", "content_type": "general", "target_audience": "general"}]'
                 research_prompt_words = count_words(prompt_used)
                 research_completion_words = count_words(raw_output)
                 research_subtotal_usd = 0.0

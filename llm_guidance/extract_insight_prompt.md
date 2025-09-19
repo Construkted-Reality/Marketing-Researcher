@@ -5,7 +5,7 @@ Given the provided information, please extract {max_insights} specific, actionab
 For each insight, provide:
 - A concise, actionable insight statement (insight)
 - Key context or supporting details (context)
-- Relevant source references (source_reference)
+- Relevant source references as an array of strings. List all sources. (source_reference)
 - Key metrics or data points (key_data)
 - Priority level for content creation (priority_level)
 - Suggested content type (content_type)
@@ -16,7 +16,7 @@ Return ONLY a valid JSON array of objects with the following structure:
   {
     "insight": "string",
     "context": "string",
-    "source_reference": "string",
+    "source_reference": ["string", "string"],
     "key_data": "string",
     "priority_level": "string",
     "content_type": "string",
@@ -30,7 +30,10 @@ Example:
   {
     "insight": "Inconsistent lighting causes photogrammetry errors",
     "context": "Poor lighting leads to mismatched features in images, resulting in alignment failures",
-    "source_reference": "https://example.com/lighting-issues",
+    "source_reference": [
+      "https://example.com/lighting-issues",
+      "https://photogrammetry.org/guides/lighting"
+    ],
     "key_data": "80% of failed projects cite lighting as the top issue",
     "priority_level": "high",
     "content_type": "troubleshooting",
@@ -39,7 +42,11 @@ Example:
   {
     "insight": "Overlapping images improve 3D reconstruction accuracy",
     "context": "Aim for 70-80% overlap between adjacent photos to ensure sufficient feature matching",
-    "source_reference": "https://example.com/overlap-rules",
+    "source_reference": [
+      "https://example.com/overlap-rules",
+      "https://surveying.tech/overlap-guide",
+      "https://docs.photogrammetry.net/overlap"
+    ],
     "key_data": "15% reduction in errors with 75% overlap vs 50% overlap",
     "priority_level": "medium",
     "content_type": "how-to",
