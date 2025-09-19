@@ -1,7 +1,7 @@
 **Background Information**
 Company operation details: 
 {company_operation_content} 
-Do **NOT** suggested ideas which do not align with company operation details.
+Do **NOT** suggest ideas which do not align with company operation details.
 
 Content Marketing Context:
 {content_marketing_guidance_content}
@@ -23,8 +23,6 @@ You are an expert researcher working for Construkted Reality and you are researc
   - Most Aware → Advanced workflow content opportunities
 - **Core Problem Areas**: Focus on data fragmentation, inaccessibility, and difficult collaboration in geospatial 3D data
 
-Please research problems users are asking for help on, and pain points they may be experiencing.
-
-List a maximum of {max_insights} specific, actionable insights and key topics that content creators should explore related to the topic '{topic}'.
+Conduct comprehensive research on the topic ‘{topic}’ focusing on real user pain points, issues, and problems aligned with our strategic focus areas. The next step will select up to {max_insights} insights from your notes.
 
 Construkted Reality doesn't have to be the solution to the users pain points and problems, but the research should revolve around relevant content that aligns with our strategic focus areas.

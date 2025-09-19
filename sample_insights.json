@@ -2,28 +2,34 @@
   {
     "insight": "Companies lose 30% productivity due to inefficient workflows",
     "context": "Recent industry studies show workflow inefficiencies cost businesses billions annually in lost productivity",
-    "source_reference": "https://forrester.com/workflow-inefficiency-study-2024",
+    "source_reference": [
+      "https://forrester.com/workflow-inefficiency-study-2024"
+    ],
     "key_data": "30% productivity loss, $2.5B annual cost to businesses",
     "priority_level": "high",
-    "content_type": "business",
-    "target_audience": "managers"
+    "content_type": "conversion-focused",
+    "target_audience": "executive"
   },
   {
     "insight": "Remote work tools reduce setup time by 65%",
     "context": "Enterprise software adoption statistics show significant time savings with modern collaboration tools",
-    "source_reference": "https://gartner.com/remote-work-tools-2024",
+    "source_reference": [
+      "https://gartner.com/remote-work-tools-2024"
+    ],
     "key_data": "65% time reduction, 40% faster deployment",
     "priority_level": "medium",
-    "content_type": "technology",
-    "target_audience": "IT professionals"
+    "content_type": "how-to",
+    "target_audience": "professional"
   },
   {
     "insight": "Automation can reduce manual processing errors by 78%",
     "context": "Manufacturing and service industries report dramatic error reduction through strategic automation implementation",
-    "source_reference": "https://mckinsey.com/automation-error-reduction-2024",
+    "source_reference": [
+      "https://mckinsey.com/automation-error-reduction-2024"
+    ],
     "key_data": "78% error reduction, 35% cost savings",
     "priority_level": "high",
-    "content_type": "technology",
-    "target_audience": "operations directors"
+    "content_type": "troubleshooting",
+    "target_audience": "professional"
   }
 ]

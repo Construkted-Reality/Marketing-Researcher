@@ -51,7 +51,12 @@ The post should be framed within the broader topic '{topic}'.
 - Follow these formatting rules: {formatting_rules}
 - When referencing information from the source URLs, include the source URL as a markdown inline link and citation and weave the URLs naturally into the body of the article for credibility and SEO optimization. 
 - At the conclusion of the blog post, add a 'Source Analysis' section that estimates the percentage of content derived from external sources versus the AI's internal knowledge. Calculate this by assessing the proportion of text that references specific sources (via inline citations) versus general statements without citations. Justify the estimation. Example: "This content is xx% based on external sources (cited URLs) and xx% based on the AI's internal knowledge."
-- The blog post must begin with a single H1 heading (e.g., # Title). Do not use any other headings before the H1. If the insight or context suggests a title, use that as the H1. Do not invent, generate, or infer a title.
+- Begin the article with a single H1 heading (# Title) that you generate, strictly following the title guidance. No headings may appear before the H1.
+- No markdown tables.
+- In ‘Conclusion with CTA’, include one primary CTA appropriate to the funnel stage (e.g., ‘Sign up for free’, ‘Explore the Construkted Globe’, or ‘Contact sales’); keep CTA 1–2 short sentences.
+- In ‘Image Prompt Summary’, list each placeholder [IMAGE N] with a bullet containing: subject, setting, style, camera/lens parameters (if relevant), aspect ratio.
+  Example:
+    - [IMAGE 1]: Aerial photogrammetry rig over suburban construction site, golden-hour lighting, realistic style, 35mm, f/4, 16:9
 
 ## Structure & Flow
 - Use the following mandatory structure:

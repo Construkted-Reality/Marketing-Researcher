@@ -5,13 +5,13 @@ Content Marketing Context:
 - MOFU: Consideration & Comparison - nurture leads evaluating solutions
 - BOFU: Decision & Conversion - convert leads into customers
 - Marketing Post Type Strategy: This defines the strategic positioning of the content within the customer journey. Choose from:
-  - Educational: For awareness and education (TOFU) - focus on answering general questions, providing foundational knowledge
-  - Comparison: For consideration and evaluation (MOFU) - highlight benefits vs competitors, feature comparisons  
-  - Conversion-focused: For decision-making and purchase (BOFU) - drive action, emphasize value and ROI
-  - Case Study: For trust-building at any stage - showcase real-world results and success stories
-  - Product Update: For awareness and conversion (TOFU/BOFU) - announce new features, improvements
-  - Standards/Policy Analysis: For thought leadership (TOFU) - industry insights, regulatory analysis
-  - News Reaction: For engagement (TOFU) - commentary on industry trends and developments
+  - educational: For awareness and education (TOFU) - focus on answering general questions, providing foundational knowledge
+  - comparison: For consideration and evaluation (MOFU) - highlight benefits vs competitors, feature comparisons
+  - conversion-focused: For decision-making and purchase (BOFU) - drive action, emphasize value and ROI
+  - case-study: For trust-building at any stage - showcase real-world results and success stories
+  - product-update: For awareness and conversion (TOFU/BOFU) - announce new features, improvements
+  - standards-policy-analysis: For thought leadership (TOFU) - industry insights, regulatory analysis
+  - news-reaction: For engagement (TOFU) - commentary on industry trends and developments
 - Content Marketing Best Practices:
   - Focus on user pain points and benefits rather than product features
   - Include clear calls-to-action where appropriate
@@ -19,4 +19,4 @@ Content Marketing Context:
   - Maintain consistent brand voice throughout
   - Provide actionable insights that readers can apply immediately
   - Include a clear primary CTA aligned to the funnel stage.
-  - Mirror content_type naming for consistency (e.g., include “How-to” and “Troubleshooting” exactly as used in extract_insight_prompt).
+  - Use the canonical lowercase kebab-case content_type values listed above. Do not create new values.
