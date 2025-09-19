@@ -13,14 +13,7 @@
 #   1. Loads .env variables (API keys, endpoints, etc.).
 #   2. Generates structured insights via GPT‑Researcher.
 #   3. For each insight, generates a blog‑post draft.
-#   4. Writes insights to JSON file (default: insights.json) and blog posts to output file.
-# --------------------------------------------------------------
-#
-# The script:
-#   1. Loads .env variables (API keys, endpoints, etc.).
-#   2. Generates structured insights via GPT‑Researcher.
-#   3. For each insight, generates a blog‑post draft.
-#   4. Writes the combined markdown to the output file.
+#   4. Writes insights to insights.json and each blog post as a markdown file in the posts_dir (default: "posts").
 # --------------------------------------------------------------
  
 import argparse
@@ -277,11 +270,13 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False, gr_
 
     company_operation_content = read_file(COMPANY_OPERATION_FILE)
     content_marketing_guidance_content = read_file(CONTENT_MARKETING_GUIDANCE_FILE)
+    context_content = read_file(CONTEXT_FILE)
 
     prompt = load_prompt_template(
         "insight_prompt_guidance",
         company_operation_content=company_operation_content,
         content_marketing_guidance_content=content_marketing_guidance_content,
+        context_content=context_content,
         max_insights=max_insights,
         topic=topic
     )
@@ -362,7 +357,7 @@ async def extract_insights_from_raw(
                 {"role": "system", "content": "You extract actionable insights from research data. Always return valid JSON arrays only."},
                 {"role": "user", "content": extraction_prompt}
             ],
-            temperature=0.7,
+            temperature=0.1,
             max_tokens=10000
         )
         
@@ -471,9 +466,12 @@ async def extract_title_from_blog_post(
     #truncated_post = blog_post_md[:40000] if len(blog_post_md) > 40000 else blog_post_md
     truncated_post = blog_post_md
     
+    # Read the title guidance content
+    titles_content = read_file(TITLES_FILE)
+    
     extraction_prompt = load_prompt_template(
         "extract_title_prompt",
-        title_guidance=TITLES_FILE,        
+        title_guidance=titles_content,        
         truncated_post=truncated_post,
     )
 
@@ -488,7 +486,7 @@ async def extract_title_from_blog_post(
                 {"role": "system", "content": "You extract clean titles from blog post content. Return only the title text without markdown formatting."},
                 {"role": "user", "content": extraction_prompt}
             ],
-            temperature=0.3,
+            temperature=0.1,
             max_tokens=5000
         )
         
@@ -536,12 +534,14 @@ async def generate_blog_post(
 
     company_operation_content = read_file(COMPANY_OPERATION_FILE)
     content_marketing_guidance_content = read_file(CONTENT_MARKETING_GUIDANCE_FILE)
+    context_content = read_file(CONTEXT_FILE)
     titles_content = read_file(TITLES_FILE)
 
     prompt = load_prompt_template(
         "create_blog-post_prompt_guidance",
         company_operation_content=company_operation_content,
         content_marketing_guidance_content=content_marketing_guidance_content,
+        context_content=context_content,
         voice_new_yorker=VOICE_DEFINITIONS["TheNewYorker"],
         voice_atlantic=VOICE_DEFINITIONS["TheAtlantic"],
         voice_wired=VOICE_DEFINITIONS["Wired"],
@@ -557,9 +557,6 @@ async def generate_blog_post(
         formatting_rules=FORMATTING_RULES,
     )
 
-    # Please use one of the following: research_report, resource_report, outline_report, custom_report, subtopic_report, deep
-    # Probably best to use either 'deep' or 'custom_report'
-    
     if verbose:
         print(f"🖋️ Generating blog post for: {insight_obj.insight[:60]}…")
     researcher = GPTResearcher(
@@ -597,7 +594,7 @@ async def main_cli() -> None:
     )
     parser.add_argument(
         "--topic",
-        required=True,
+        required=False,
         help="Broad research topic (e.g., 'remote work productivity').",
     )
     parser.add_argument(
@@ -638,6 +635,10 @@ async def main_cli() -> None:
         help="Directory to save blog post files (default: 'posts'). Will be created if it doesn't exist.",
     )
     args = parser.parse_args()
+
+    # Validate that topic is provided unless insights-input is used
+    if not args.insights_input and not args.topic:
+        parser.error("--topic is required unless --insights-input is provided")
 
     # ------------------------------------------------------------------
     # Prepare environment

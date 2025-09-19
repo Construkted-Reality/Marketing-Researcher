@@ -18,3 +18,5 @@ Content Marketing Context:
   - Optimize for search engines with relevant keywords
   - Maintain consistent brand voice throughout
   - Provide actionable insights that readers can apply immediately
+  - Include a clear primary CTA aligned to the funnel stage.
+  - Mirror content_type naming for consistency (e.g., include “How-to” and “Troubleshooting” exactly as used in extract_insight_prompt).

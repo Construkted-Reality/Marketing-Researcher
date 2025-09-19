@@ -8,8 +8,10 @@
 - If possible, keep the title word count under 15 words.
 
 - Keep the title **truthful and specific**.  
+  • No clickbait superlatives (e.g., ‘ultimate’, ‘unbelievable’) unless justified.
   • No click‑bait phrasing (e.g., “You won’t believe…”, “The secret to…”).  
   • Do not promise results that the article does not deliver.
+  • Prefer verbs and specificity over adjectives.
 
 - Optional: add a **target audience or constraint** to increase relevance.  
   Example: “Deploy a CI pipeline for data‑science teams in 10 minutes”.

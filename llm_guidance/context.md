@@ -18,7 +18,7 @@ Core Problem Solved: We fix data fragmentation, inaccessibility, and difficult c
 Assets: The foundational, un-modified 3D data files with rich metadata (geo-location, capture date, etc.).
 Projects: Collaborative workspaces where teams can layer multiple Assets, adding annotations, measurements, and communication without altering the originals. Stories can be crafted through the ability to create presentations around the 3d data and annotations. All is done through a collaborative editing environment.
 Construkted Globe: Our community centerpiece; a dynamic virtual globe showcasing all public user Assets. We are building more than a tool; we are building a new kind of map. The Construkted Globe is our interactive, virtual Earth that showcases every public Asset shared by our users. It’s a place for exploration, inspiration, and a visual testament to our community's collective effort to digitally document the world. 
-(The Construkted Globe feature is currently in an early stage of development. Lets not talk much about it)
+(Avoid emphasizing Construkted Globe; mention lightly and only when relevant.)
 
 ### C. Strategic Pillars
 

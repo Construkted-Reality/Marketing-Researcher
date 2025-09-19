@@ -25,7 +25,7 @@ Construkted Reality is an open-access, web-based platform that democratizes 3D d
 **Collaborative Workspaces (Projects)**
 - Create collaborative workspaces where teams can layer multiple Assets
 - Add annotations, measurements, and communication without altering original files
-  - Annotation types availble
+  - Annotation types available
     - Note, Polyline, Polygon, Place image
   - Measurement types available
     - Point information (coordinates, slope), distance, area, volume
@@ -76,7 +76,7 @@ Construkted Reality is an open-access, web-based platform that democratizes 3D d
 - No offline desktop application – fully web‑based access only
 - No native 3D modeling or editing tools (focuses on management and collaboration)
 - No API access for advanced integrations (planned for future releases)
-- Not a photogrammetry pipeline. It cannot process images and generate 3d models.
+- Not a photogrammetry pipeline. It cannot process images and generate 3D models.
 
 ### Functional Restrictions
 - Does not alter or modify original 3D assets during collaboration
