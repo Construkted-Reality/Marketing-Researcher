@@ -1,5 +1,21 @@
 # Task Documentation: Content Marketing Research System
 
+## Task: Add Custom Posts Directory Option
+**Last performed:** 2025-09-19
+**Files to modify:**
+- `spt_researcher.py` – Added `--posts-dir` CLI argument (default: `"posts"`).
+- `.kilocode/rules/memory-bank/architecture.md` – Documented the new output option.
+- `.kilocode/rules/memory-bank/context.md` – Updated current context with the new flag.
+
+**Steps:**
+1. Add `parser.add_argument("--posts-dir", type=str, default="posts", help="Directory to save blog post files (default: 'posts'). Will be created if it doesn't exist.")`.
+2. Replace hard‑coded `Path("posts")` with `Path(args.posts_dir)` in the blog‑post generation loop.
+3. Ensure the target directory is created (`mkdir(parents=True, exist_ok=True)`).
+4. Verify that blog posts are written to the specified directory and that the default behaviour (no flag) still writes to `posts/`.
+5. Update the Memory Bank documentation to reflect the new capability.
+
+**Result:** Users can now direct blog post output to any folder via `--posts-dir`, improving workflow flexibility while maintaining backward compatibility.
+
 ## Task: Switch Embedding Configuration
 **Last performed:** September 7, 2025
 **Files to modify:**

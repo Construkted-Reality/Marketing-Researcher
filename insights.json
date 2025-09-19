@@ -1,11 +1,20 @@
 [
   {
-    "insight": "AI-powered auto-tagging significantly improves searchability and organization of 3D assets",
-    "context": "echo3D's integration of AI technologies like auto-tagging and metadata management enhances the searchability and organization of 3D assets, making it easier for teams to locate and utilize resources efficiently.",
-    "source_reference": "https://blog.echo3d.com/blog/overcoming-common-3d-file-management-challenges",
-    "key_data": "AI-enhanced metadata management reduces search time by an estimated 40% and decreases asset duplication by 30%",
+    "insight": "CPU saturation is the primary cause of crashes on mid‑range photogrammetry rigs.",
+    "context": "A user with an over‑clocked i7‑3770 (4 GHz) and a 1080 Ti reported the CPU spiking to 100 % and the project crashing when processing 400 high‑resolution photos of a dilapidated room.",
+    "source_reference": "https://www.reddit.com/r/photogrammetry/comments/a1lkfo/hardware_help_for_meshroom_cpu_question/",
+    "key_data": "Older i7 3770, 4 GHz, 100 % CPU spikes, consistent crashes on 400‑photo project.",
     "priority_level": "high",
-    "content_type": "how-to",
-    "target_audience": "3D content creators and managers"
+    "content_type": "troubleshooting guide",
+    "target_audience": "technical beginners and hobbyists"
+  },
+  {
+    "insight": "Insufficient RAM and non‑local cache storage dramatically increase processing time for large photogrammetry jobs.",
+    "context": "Guidelines recommend 16 GB RAM for typical work and 32 GB+ for >500 photos. A 12‑core i7 with 28 GB RAM and a 3090 still took 10 days to finish a 1.5 billion‑polygon mesh until the user moved the cache to a local SSD and down‑sampled images to 50 % resolution.",
+    "source_reference": "https://www.pix-pro.com/blog/update-drivers; https://www.reddit.com/r/photogrammetry/comments/zz6v8w/reality_capture_took_9_days_and_created_15/",
+    "key_data": "32 GB RAM needed for 500+ photos; 9‑day point‑cloud generation + 7‑day meshing on 12‑core i7, 28 GB RAM, 3090; 50 % image down‑sampling cut processing time significantly.",
+    "priority_level": "medium‑high",
+    "content_type": "best‑practices/how‑to article",
+    "target_audience": "intermediate to advanced photogrammetry users"
   }
 ]

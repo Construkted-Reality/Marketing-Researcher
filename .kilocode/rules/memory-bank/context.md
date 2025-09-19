@@ -51,6 +51,7 @@ Search configuration clarification:
 - ✅ **Default JSON Output Migration**: Seamless workflow from insight generation to blog post creation
 - ✅ **LLM Guidance System**: Sophisticated prompt engineering with company context and voice selection
 - ✅ **Individual Blog Post Files**: Automatic generation of separate markdown files with slugified titles
+- ✅ **Custom Posts Directory Option**: Added `--posts-dir` CLI argument to `spt_researcher.py` allowing users to specify the output folder for blog post files (default: `"posts"`). The script creates the directory if it does not exist.
 - ✅ **Enhanced Content Quality**: Source analysis scoring, image placeholders, writing style selection
 - ✅ **Comprehensive Testing**: Full test suite with pytest optimization and dummy data modes
 

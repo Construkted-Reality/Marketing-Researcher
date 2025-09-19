@@ -84,6 +84,8 @@ python spt_researcher.py --topic "photogrammetry workflows" --verbose
 
 # Custom output location
 python spt_researcher.py --topic "3D scanning" --output my_content.md --verbose
+# Custom posts directory
+python spt_researcher.py --topic "3D scanning" --posts-dir my_posts --verbose
 
 # Limit number of insights
 python spt_researcher.py --topic "GIS automation" --max-insights 5

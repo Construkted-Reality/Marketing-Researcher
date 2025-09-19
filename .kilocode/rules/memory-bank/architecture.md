@@ -58,6 +58,7 @@
 
 ### Output Structure
 - **`posts/`**: Individual blog post files with slugified titles
+- **Custom posts directory**: Users can specify an alternative directory via the `--posts-dir` CLI argument (default: `posts`). The script creates the directory if it does not exist.
 - **`insights.json`**: Canonical JSON insights for reproducible workflows
 - **`sample_insights.json`**: Template insights for testing and demonstration
 
