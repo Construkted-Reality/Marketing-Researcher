@@ -285,6 +285,7 @@ async def get_insights(topic: str, max_insights: int, verbose: bool = False, gr_
         print("🔎 Generating insights…")
     researcher = GPTResearcher(
         query=prompt,
+    #    report_type="deep",
         verbose=gr_verbose
     )
     try:

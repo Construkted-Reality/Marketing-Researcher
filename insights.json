@@ -1,0 +1,24 @@
+[
+  {
+    "insight": "Adopt an integrated drone data platform that auto‑ingests images, orthomosaics, and 3D models directly into BIM and construction management systems to eliminate manual uploads and data silos.",
+    "context": "Anvil Labs reports that fragmented file formats and tedious manual uploads create bottlenecks when thousands of images are captured per flight, leading to delayed decisions and rework.",
+    "source_reference": [
+      "https://anvil.so/post/top-drone-workflow-bottlenecks-in-construction"
+    ],
+    "key_data": "",
+    "priority_level": "high",
+    "content_type": "how-to",
+    "target_audience": "professional"
+  },
+  {
+    "insight": "Implement strict GCP placement guidelines—use high‑contrast targets, ensure even spatial distribution, and validate positions with RTK GPS—to prevent misalignment and accuracy loss in drone surveys.",
+    "context": "Drone Survey Hub identifies inaccurate or insufficient GCPs as a major source of survey misalignment, recommending best‑practice placement and precision GPS verification.",
+    "source_reference": [
+      "https://dronesurveyhub.wordpress.com/2025/01/31/top-challenges-in-drone-based-surveying-how-to-solve-them/"
+    ],
+    "key_data": "",
+    "priority_level": "medium",
+    "content_type": "troubleshooting",
+    "target_audience": "professional"
+  }
+]
